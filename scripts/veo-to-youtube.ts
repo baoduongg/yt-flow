@@ -1,13 +1,6 @@
 import { createReadStream } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { GoogleGenAI } from "@google/genai";
 import { google } from "googleapis";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-// ponytail: model id per Veo docs at time of writing, verify against
-// https://ai.google.dev/gemini-api/docs/video before relying on it long-term.
-const VEO_MODEL = process.env.VEO_MODEL ?? "veo-3.1-generate-preview";
+import { generateVideoViaBrowser } from "../lib/gemini-browser.ts";
 
 export interface YoutubeMeta {
   title: string;
@@ -16,24 +9,7 @@ export interface YoutubeMeta {
 }
 
 export async function generateVideo(prompt: string): Promise<string> {
-  let operation = await ai.models.generateVideos({
-    model: VEO_MODEL,
-    prompt,
-  });
-
-  while (!operation.done) {
-    await new Promise((resolve) => setTimeout(resolve, 10_000));
-    operation = await ai.operations.getVideosOperation({ operation });
-  }
-
-  const video = operation.response?.generatedVideos?.[0]?.video;
-  if (!video) {
-    throw new Error(`generateVideo: Veo API không trả về video (operation: ${JSON.stringify(operation)})`);
-  }
-
-  const outputPath = path.join(tmpdir(), `veo-${Date.now()}.mp4`);
-  await ai.files.download({ file: video, downloadPath: outputPath });
-  return outputPath;
+  return generateVideoViaBrowser(prompt);
 }
 
 export async function uploadToYoutube(filePath: string, meta: YoutubeMeta): Promise<string> {
