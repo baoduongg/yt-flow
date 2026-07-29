@@ -4,11 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "pipeline": "tsx --env-file=.env scripts/run-shorts-pipeline.ts"
+    "pipeline": "tsx --env-file=.env scripts/run-shorts-pipeline.ts",
+    "gemini:login": "tsx --env-file=.env scripts/gemini-login.ts"
   },
   "dependencies": {
     "@google/genai": "^1.11.0",
-    "googleapis": "^144.0.0"
+    "googleapis": "^144.0.0",
+    "playwright": "^1.48.0"
   },
   "devDependencies": {
     "typescript": "^5.6.0",
