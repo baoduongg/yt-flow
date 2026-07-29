@@ -56,7 +56,7 @@ const POLL_INTERVAL_MS = 10_000;
 async function selectVeoMode(page: Page): Promise<void> {
   // ponytail: selector guessed — gemini.google.com's DOM wasn't inspectable
   // while writing this. If this throws or clicks the wrong thing, run
-  // `npx tsx scripts/gemini-test-video.ts "test prompt"` headed and fix the
+  // `npx tsx --env-file=.env scripts/gemini-test-video.ts "test prompt"` headed and fix the
   // locator here. See docs/superpowers/specs/2026-07-29-playwright-gemini-video-gen-design.md
   // "Known risk / open item" for context.
   const toolsButton = page.getByRole("button", { name: /tools|more/i });
