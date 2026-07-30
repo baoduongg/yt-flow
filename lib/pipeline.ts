@@ -12,6 +12,7 @@ const carsPoolPath = path.join(projectRoot, "data", "cars.json");
 export type PipelineHooks = {
   onStep?: (message: string) => void;
   confirmVideo: (videoPath: string) => Promise<boolean>;
+  confirmMetadata?: (meta: VideoMetadata) => Promise<VideoMetadata>;
 };
 
 export type PipelineOptions = {
@@ -77,9 +78,10 @@ export async function runPipeline(
   hooks.onStep?.("Đang tạo tiêu đề/mô tả/tag cho YouTube...");
   const metadata = await deps.generateMetadata(car);
   hooks.onStep?.(`Metadata đã sinh xong: ${metadata.title}`);
+  const finalMetadata = hooks.confirmMetadata ? await hooks.confirmMetadata(metadata) : metadata;
 
   hooks.onStep?.("Đang upload video lên YouTube...");
-  const videoUrl = await deps.uploadToYoutube(videoPath, metadata);
+  const videoUrl = await deps.uploadToYoutube(videoPath, finalMetadata);
   await deps.unlink(videoPath);
   hooks.onStep?.(`Đã đăng: ${videoUrl}`);
 

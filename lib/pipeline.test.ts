@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { runPipeline, type PipelineDeps } from "./pipeline.ts";
+import type { VideoMetadata } from "./generate-metadata.ts";
 
 function makeDeps(): PipelineDeps & {
   calls: { generateVideo: number; unlink: number; uploadToYoutube: number; generateMetadata: number };
@@ -63,4 +64,26 @@ test("invalid carOverride throws before generating any video", async () => {
     /Không tìm thấy xe/,
   );
   assert.equal(deps.calls.generateVideo, 0);
+});
+
+test("confirmMetadata edits metadata before upload", async () => {
+  const deps = makeDeps();
+  const uploaded: VideoMetadata[] = [];
+  deps.uploadToYoutube = async (_path, meta) => {
+    uploaded.push(meta);
+    return "https://youtu.be/edited";
+  };
+
+  const result = await runPipeline(
+    {},
+    {
+      confirmVideo: async () => true,
+      confirmMetadata: async (meta) => ({ ...meta, title: "Edited Title" }),
+    },
+    deps,
+  );
+
+  assert.equal(uploaded.length, 1);
+  assert.equal(uploaded[0].title, "Edited Title");
+  assert.equal(result.videoUrl, "https://youtu.be/edited");
 });
