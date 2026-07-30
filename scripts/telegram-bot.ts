@@ -23,12 +23,12 @@ bot.command("status", async (ctx) => {
     await ctx.reply("Rảnh.");
     return;
   }
-  await ctx.reply(`Đang chạy xe ${currentCar}, bước: ${currentStep}.`);
+  await ctx.reply(`Đang tạo video cho mẫu xe ${currentCar}, đang thực hiện bước: ${currentStep}.`);
 });
 
 bot.command("run", async (ctx) => {
   if (busy) {
-    await ctx.reply(`Đang chạy xe ${currentCar}, bước: ${currentStep}. Đợi xong đã.`);
+    await ctx.reply(`Đang tạo video cho mẫu xe ${currentCar}, đang thực hiện bước: ${currentStep}. Đợi xong đã.`);
     return;
   }
 
@@ -43,7 +43,7 @@ bot.command("run", async (ctx) => {
       onStep: (message) => {
         currentStep = message;
         if (message.startsWith("Xe: ")) currentCar = message.slice("Xe: ".length);
-        ctx.reply(message).catch(() => {});
+        ctx.reply(message).catch(() => { });
       },
       confirmVideo: (videoPath) =>
         new Promise<boolean>((resolve) => {
@@ -55,15 +55,15 @@ bot.command("run", async (ctx) => {
               await ctx
                 .reply(
                   `Video quá lớn để gửi qua Telegram, xem trực tiếp tại ${videoPath} trên máy. ` +
-                    `Gõ /approve hoặc /reject để tiếp tục. (Lỗi: ${(err as Error).message})`,
+                  `Gõ /approve hoặc /reject để tiếp tục. (Lỗi: ${(err as Error).message})`,
                 )
-                .catch(() => {});
+                .catch(() => { });
             });
         }),
     },
   )
     .catch(async (err) => {
-      await ctx.reply(`Lỗi: ${(err as Error).message}`).catch(() => {});
+      await ctx.reply(`Lỗi: ${(err as Error).message}`).catch(() => { });
     })
     .finally(() => {
       busy = false;

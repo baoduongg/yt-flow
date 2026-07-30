@@ -4,3 +4,8 @@ node_modules/
 output/
 .claude/
 .superpowers/sdd/
+skills-lock.json
+.agents/skills/design-taste-frontend/SKILL.md
+.agents/skills/high-end-visual-design/SKILL.md
+.agents/skills/imagegen-frontend-web/SKILL.md
+.agents/skills/redesign-existing-projects/SKILL.md
