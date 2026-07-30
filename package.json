@@ -7,7 +7,7 @@
     "pipeline": "tsx --env-file=.env scripts/run-shorts-pipeline.ts",
     "gemini:login": "tsx --env-file=.env scripts/gemini-login.ts",
     "bot": "tsx --env-file=.env scripts/telegram-bot.ts",
-    "test": "tsx --test lib/pipeline.test.ts"
+    "test": "tsx --test lib/*.test.ts"
   },
   "dependencies": {
     "@google/genai": "^1.11.0",
