@@ -52,19 +52,18 @@ bot.command("run", async (ctx) => {
           ctx
             .replyWithVideo(new InputFile(videoPath), { reply_markup: keyboard })
             .catch(async (err) => {
-              await ctx.reply(
-                `Video quá lớn để gửi qua Telegram, xem trực tiếp tại ${videoPath} trên máy. ` +
-                  `Gõ /approve hoặc /reject để tiếp tục. (Lỗi: ${(err as Error).message})`,
-              );
+              await ctx
+                .reply(
+                  `Video quá lớn để gửi qua Telegram, xem trực tiếp tại ${videoPath} trên máy. ` +
+                    `Gõ /approve hoặc /reject để tiếp tục. (Lỗi: ${(err as Error).message})`,
+                )
+                .catch(() => {});
             });
         }),
     },
   )
-    .then(async (result) => {
-      await ctx.reply(`Đã đăng: ${result.videoUrl}`);
-    })
     .catch(async (err) => {
-      await ctx.reply(`Lỗi: ${(err as Error).message}`);
+      await ctx.reply(`Lỗi: ${(err as Error).message}`).catch(() => {});
     })
     .finally(() => {
       busy = false;
@@ -91,6 +90,10 @@ bot.on("callback_query:data", async (ctx) => {
   await ctx.answerCallbackQuery();
   pendingConfirm?.(approved);
   pendingConfirm = null;
+});
+
+bot.catch((err) => {
+  console.error("Bot error:", err);
 });
 
 bot.start();
