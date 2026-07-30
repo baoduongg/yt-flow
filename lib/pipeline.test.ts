@@ -1,35 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { runPipeline, type PipelineDeps } from "./pipeline.ts";
+import { runPipeline } from "./pipeline.ts";
+import { makeMockDeps } from "./test-support.ts";
 import type { VideoMetadata } from "./generate-metadata.ts";
 
-function makeDeps(): PipelineDeps & {
-  calls: { generateVideo: number; unlink: number; uploadToYoutube: number; generateMetadata: number };
-} {
-  const calls = { generateVideo: 0, unlink: 0, uploadToYoutube: 0, generateMetadata: 0 };
-  return {
-    calls,
-    pickNextCar: async () => "Test Car",
-    generateVideo: async () => {
-      calls.generateVideo++;
-      return `/tmp/video-${calls.generateVideo}.mp4`;
-    },
-    generateMetadata: async () => {
-      calls.generateMetadata++;
-      return { title: "t", description: "d", tags: [] };
-    },
-    uploadToYoutube: async () => {
-      calls.uploadToYoutube++;
-      return "https://youtu.be/test";
-    },
-    unlink: async () => {
-      calls.unlink++;
-    },
-  };
-}
-
 test("confirmVideo false triggers regeneration, true continues to upload", async () => {
-  const deps = makeDeps();
+  const deps = makeMockDeps();
   let confirmCalls = 0;
   const confirmVideo = async () => {
     confirmCalls++;
@@ -47,7 +23,7 @@ test("confirmVideo false triggers regeneration, true continues to upload", async
 });
 
 test("confirmVideo true immediately uploads on first try", async () => {
-  const deps = makeDeps();
+  const deps = makeMockDeps();
   const result = await runPipeline({}, { confirmVideo: async () => true }, deps);
 
   assert.equal(deps.calls.generateVideo, 1);
@@ -57,7 +33,7 @@ test("confirmVideo true immediately uploads on first try", async () => {
 });
 
 test("invalid carOverride throws before generating any video", async () => {
-  const deps = makeDeps();
+  const deps = makeMockDeps();
 
   await assert.rejects(
     () => runPipeline({ carOverride: "Không Tồn Tại XYZ" }, { confirmVideo: async () => true }, deps),
@@ -67,7 +43,7 @@ test("invalid carOverride throws before generating any video", async () => {
 });
 
 test("confirmMetadata edits metadata before upload", async () => {
-  const deps = makeDeps();
+  const deps = makeMockDeps();
   const uploaded: VideoMetadata[] = [];
   deps.uploadToYoutube = async (_path, meta) => {
     uploaded.push(meta);
