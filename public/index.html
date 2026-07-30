@@ -21,32 +21,238 @@
           </svg>
           <h1>yt-flow <span class="badge">dashboard</span></h1>
         </div>
-        <div class="system-status">
-          <span class="status-indicator-dot online"></span>
-          <span class="status-text">Local Server Active</span>
+        <div class="header-actions">
+          <div class="system-status">
+            <span class="status-indicator-dot online"></span>
+            <span class="status-text">Local Server Active</span>
+          </div>
+          <button id="btn-open-settings" class="btn btn-secondary btn-icon" type="button" title="Cấu hình hệ thống">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>Cấu hình</span>
+          </button>
         </div>
       </div>
     </header>
 
-    <main class="dashboard-grid">
-      <!-- Left Column: Setup & Configuration -->
-      <aside class="sidebar-panel">
-        <section id="setup" class="card glass">
-          <div class="card-header">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+    <!-- Setup Wizard: displayed if setup is incomplete -->
+    <div id="setup-wizard-container" class="setup-wizard-container" hidden>
+      <div class="card glass setup-wizard-card">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          <h2>Hướng dẫn thiết lập hệ thống (Setup Wizard)</h2>
+        </div>
+        <div class="card-body">
+          <p class="wizard-subtitle">Chào mừng bạn đến với <strong>yt-flow</strong>. Hãy hoàn tất các bước bên dưới để kích hoạt hệ thống tự động hóa video.</p>
+          
+          <div class="wizard-progress-bar">
+            <div id="wizard-progress-fill" class="wizard-progress-fill" style="width: 0%"></div>
+          </div>
+          <p class="wizard-progress-text">Hoàn thành: <span id="wizard-progress-step-count">0/4</span> bước</p>
+
+          <div class="wizard-steps-stack">
+            <!-- Step 1: Google Chrome -->
+            <div id="step-chrome" class="wizard-step">
+              <div class="step-header">
+                <div class="step-header-left">
+                  <span class="step-num">1</span>
+                  <span class="step-title">Trình duyệt Google Chrome</span>
+                </div>
+                <span id="badge-chrome" class="step-badge badge-warning">Đang kiểm tra...</span>
+              </div>
+              <div class="step-body">
+                <p>Playwright điều khiển Google Chrome thực tế để tự động tạo video trên Gemini. Bạn cần cài đặt Google Chrome trên máy tính của mình.</p>
+                <div class="status-msg-box error-box" id="chrome-not-found" hidden>
+                  Không tìm thấy Google Chrome tại các thư mục ứng dụng mặc định. Vui lòng tải và cài đặt từ <a href="https://www.google.com/chrome/" target="_blank" rel="noopener">trang chủ Chrome</a>.
+                </div>
+                <div class="status-msg-box success-box" id="chrome-found" hidden>
+                  Đã phát hiện Google Chrome trên hệ thống của bạn!
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: File .env -->
+            <div id="step-env" class="wizard-step">
+              <div class="step-header">
+                <div class="step-header-left">
+                  <span class="step-num">2</span>
+                  <span class="step-title">Khởi tạo cấu hình (.env)</span>
+                </div>
+                <span id="badge-env" class="step-badge badge-error font-highlight">Chưa có</span>
+              </div>
+              <div class="step-body">
+                <p>Môi trường chạy cần file <code>.env</code> để lưu trữ các cấu hình bảo mật.</p>
+                <div class="step-action" id="env-create-container">
+                  <button id="btn-init-env" type="button" class="btn btn-primary btn-sm">Tự động tạo file .env từ mẫu</button>
+                </div>
+                <div class="status-msg-box success-box" id="env-created-msg" hidden>
+                  Đã tạo file <code>.env</code> thành công!
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3: Đăng nhập Gemini -->
+            <div id="step-login" class="wizard-step">
+              <div class="step-header">
+                <div class="step-header-left">
+                  <span class="step-num">3</span>
+                  <span class="step-title">Đăng nhập Gemini trên trình duyệt</span>
+                </div>
+                <span id="badge-login" class="step-badge badge-error">Chưa đăng nhập</span>
+              </div>
+              <div class="step-body">
+                <p>Vì lý do bảo mật của Google, bạn cần đăng nhập tài khoản Google của bạn bằng Chrome thật một lần để lưu phiên hoạt động.</p>
+                <p>Mở terminal trong thư mục dự án và chạy lệnh sau:</p>
+                <div class="command-box">
+                  <code>npm run gemini:login</code>
+                  <button class="btn-copy" data-copy="npm run gemini:login" type="button" title="Sao chép lệnh">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+                <p class="small-text font-muted mt-2">Trình duyệt Chrome sẽ hiện ra. Hãy đăng nhập tài khoản của bạn, sau đó quay lại terminal nhấn <strong>Enter</strong> để kết thúc.</p>
+                <div class="step-action mt-2">
+                  <button id="btn-check-login" type="button" class="btn btn-secondary btn-sm">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="spin-icon-slow" style="display: none;">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <path d="M12 2a10 10 0 0 1 10 10"></path>
+                    </svg>
+                    <span>Kiểm tra lại kết nối</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 4: Điền thông tin API Keys -->
+            <div id="step-keys" class="wizard-step">
+              <div class="step-header">
+                <div class="step-header-left">
+                  <span class="step-num">4</span>
+                  <span class="step-title">Cấu hình API & OAuth Token</span>
+                </div>
+                <span id="badge-keys" class="step-badge badge-error">Chưa đủ</span>
+              </div>
+              <div class="step-body">
+                <p>Nhập thông tin khóa API cần thiết cho việc tạo mô tả bằng AI và upload video tự động lên YouTube.</p>
+                
+                <form id="wizard-config-form" class="form-grid wizard-form">
+                  <div class="form-group">
+                    <label for="wiz-gemini-key">
+                      <span class="label-title">GEMINI_API_KEY <span class="required-star">*</span></span>
+                      <span class="label-help">Dùng tạo Title/Description. Tạo key miễn phí tại <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio ↗</a>.</span>
+                    </label>
+                    <input id="wiz-gemini-key" type="password" placeholder="Để trống để giữ nguyên" autocomplete="new-password" />
+                  </div>
+
+                  <div class="form-group-row">
+                    <div class="form-group">
+                      <label for="wiz-yt-id">
+                        <span class="label-title">YOUTUBE_CLIENT_ID <span class="required-star">*</span></span>
+                        <span class="label-help">Lấy từ Credentials của <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console ↗</a> (Desktop App).</span>
+                      </label>
+                      <input id="wiz-yt-id" type="password" placeholder="Để trống để giữ nguyên" autocomplete="new-password" />
+                    </div>
+                    <div class="form-group">
+                      <label for="wiz-yt-secret">
+                        <span class="label-title">YOUTUBE_CLIENT_SECRET <span class="required-star">*</span></span>
+                        <span class="label-help">Secret tương ứng với Client ID của Desktop app.</span>
+                      </label>
+                      <input id="wiz-yt-secret" type="password" placeholder="Để trống để giữ nguyên" autocomplete="new-password" />
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="wiz-yt-refresh">
+                      <span class="label-title">YOUTUBE_REFRESH_TOKEN <span class="required-star">*</span></span>
+                      <span class="label-help">Lấy tại <a href="https://developers.google.com/oauthplayground" target="_blank" rel="noopener">Google OAuth Playground ↗</a> với Client ID & Secret ở trên cùng scope <code>youtube.upload</code>.</span>
+                    </label>
+                    <input id="wiz-yt-refresh" type="password" placeholder="Để trống để giữ nguyên" autocomplete="new-password" />
+                  </div>
+
+                  <div class="advanced-toggle-container">
+                    <button type="button" id="btn-toggle-advanced" class="btn-text-link">Cấu hình nâng cao (Tùy chọn) ▾</button>
+                  </div>
+
+                  <div id="advanced-config-fields" class="form-grid mt-2" style="display: none;">
+                    <div class="form-group-row">
+                      <div class="form-group">
+                        <label for="wiz-gemini-model">GEMINI_TEXT_MODEL</label>
+                        <input id="wiz-gemini-model" type="text" placeholder="gemini-2.5-flash" />
+                      </div>
+                      <div class="form-group">
+                        <label for="wiz-yt-privacy">YOUTUBE_PRIVACY_STATUS</label>
+                        <div class="select-wrapper">
+                          <select id="wiz-yt-privacy">
+                            <option value="private">Private (Riêng tư)</option>
+                            <option value="public">Public (Công khai)</option>
+                            <option value="unlisted">Unlisted (Không công khai)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-group-row">
+                      <div class="form-group">
+                        <label for="wiz-tg-token">TELEGRAM_BOT_TOKEN</label>
+                        <input id="wiz-tg-token" type="password" placeholder="Để trống để giữ nguyên" autocomplete="new-password" />
+                      </div>
+                      <div class="form-group">
+                        <label for="wiz-tg-chat">TELEGRAM_CHAT_ID</label>
+                        <input id="wiz-tg-chat" type="text" placeholder="Nhập Telegram Chat ID..." />
+                      </div>
+                    </div>
+                  </div>
+
+                  <button id="btn-save-wizard-keys" type="submit" class="btn btn-primary btn-glow mt-4">
+                    <span>Lưu Cấu Hình & Bắt Đầu Sử Dụng</span>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </button>
+                  <p id="wizard-save-status" class="status-msg"></p>
+                </form>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Drawer (Collapsible settings panel) -->
+    <div id="settings-drawer" class="settings-drawer" hidden>
+      <div class="drawer-overlay" id="drawer-overlay"></div>
+      <div class="drawer-content glass">
+        <div class="drawer-header">
+          <div class="drawer-title-group">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="3"></circle>
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
             </svg>
             <h2>Cấu hình (.env)</h2>
           </div>
-          <div class="card-body">
-            <form id="config-form" class="form-grid"></form>
-            <p id="config-status" class="status-msg"></p>
-          </div>
-        </section>
-      </aside>
+          <button id="btn-close-settings" class="btn-close" type="button" aria-label="Đóng cấu hình">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="drawer-body">
+          <p class="drawer-help-text">Chỉnh sửa các tham số cấu hình của file <code>.env</code> bên dưới. Để trống nếu muốn giữ nguyên giá trị cũ.</p>
+          <form id="config-form" class="form-grid"></form>
+          <p id="config-status" class="status-msg"></p>
+        </div>
+      </div>
+    </div>
 
-      <!-- Right Column: Interactive Work Flow -->
+    <main id="main-dashboard" class="dashboard-grid">
+      <!-- Interactive Work Flow (Centered Single Column) -->
       <div class="main-content-flow">
         <!-- Configuration & Selection of Car -->
         <section id="cars" class="card glass">

@@ -186,5 +186,317 @@ function renderState(state) {
 
 new EventSource("/api/events").onmessage = (e) => renderState(JSON.parse(e.data));
 
-loadConfig();
-loadCars();
+// --- SETUP WIZARD ORCHESTRATION ---
+const setupWizardContainer = document.getElementById("setup-wizard-container");
+const mainDashboard = document.getElementById("main-dashboard");
+const btnInitEnv = document.getElementById("btn-init-env");
+const envCreateContainer = document.getElementById("env-create-container");
+const envCreatedMsg = document.getElementById("env-created-msg");
+const btnCheckLogin = document.getElementById("btn-check-login");
+const checkLoginSpinIcon = btnCheckLogin.querySelector(".spin-icon-slow");
+
+const wizardConfigForm = document.getElementById("wizard-config-form");
+const wizardSaveStatus = document.getElementById("wizard-save-status");
+const btnToggleAdvanced = document.getElementById("btn-toggle-advanced");
+const advancedConfigFields = document.getElementById("advanced-config-fields");
+
+const badgeChrome = document.getElementById("badge-chrome");
+const chromeNotFound = document.getElementById("chrome-not-found");
+const chromeFound = document.getElementById("chrome-found");
+
+const badgeEnv = document.getElementById("badge-env");
+const badgeLogin = document.getElementById("badge-login");
+const badgeKeys = document.getElementById("badge-keys");
+
+const progressFill = document.getElementById("wizard-progress-fill");
+const progressStepCount = document.getElementById("wizard-progress-step-count");
+
+let isSetupComplete = false;
+
+// Expand/collapse steps when header is clicked
+document.querySelectorAll(".wizard-step").forEach((stepEl) => {
+  const header = stepEl.querySelector(".step-header");
+  header.addEventListener("click", () => {
+    const wasActive = stepEl.classList.contains("active");
+    document.querySelectorAll(".wizard-step").forEach((el) => el.classList.remove("active"));
+    if (!wasActive) {
+      stepEl.classList.add("active");
+    }
+  });
+});
+
+async function checkSetupStatus() {
+  try {
+    const status = await fetch("/api/setup-status").then((r) => r.json());
+    let completedSteps = 0;
+    
+    // Step 1: Chrome
+    if (status.chromeInstalled) {
+      badgeChrome.className = "step-badge badge-success";
+      badgeChrome.textContent = "Đã có";
+      chromeNotFound.hidden = true;
+      chromeFound.hidden = false;
+      document.getElementById("step-chrome").classList.add("completed");
+      completedSteps++;
+    } else {
+      badgeChrome.className = "step-badge badge-error";
+      badgeChrome.textContent = "Thiếu";
+      chromeNotFound.hidden = false;
+      chromeFound.hidden = true;
+      document.getElementById("step-chrome").classList.remove("completed");
+    }
+    
+    // Step 2: Env File
+    if (status.envFileCreated) {
+      badgeEnv.className = "step-badge badge-success";
+      badgeEnv.textContent = "Đã có";
+      envCreateContainer.hidden = true;
+      envCreatedMsg.hidden = false;
+      document.getElementById("step-env").classList.add("completed");
+      completedSteps++;
+    } else {
+      badgeEnv.className = "step-badge badge-error";
+      badgeEnv.textContent = "Chưa có";
+      envCreateContainer.hidden = false;
+      envCreatedMsg.hidden = true;
+      document.getElementById("step-env").classList.remove("completed");
+    }
+    
+    // Step 3: Gemini Login
+    if (status.geminiProfileLoggedIn) {
+      badgeLogin.className = "step-badge badge-success";
+      badgeLogin.textContent = "Đã đăng nhập";
+      document.getElementById("step-login").classList.add("completed");
+      completedSteps++;
+    } else {
+      badgeLogin.className = "step-badge badge-error";
+      badgeLogin.textContent = "Chưa đăng nhập";
+      document.getElementById("step-login").classList.remove("completed");
+    }
+    
+    // Step 4: Required Keys
+    if (status.requiredKeysSet) {
+      badgeKeys.className = "step-badge badge-success";
+      badgeKeys.textContent = "Đã đủ";
+      document.getElementById("step-keys").classList.add("completed");
+      completedSteps++;
+    } else {
+      badgeKeys.className = "step-badge badge-error";
+      badgeKeys.textContent = "Chưa đủ";
+      document.getElementById("step-keys").classList.remove("completed");
+    }
+    
+    // Update progress bar
+    const percentage = (completedSteps / 4) * 100;
+    progressFill.style.width = `${percentage}%`;
+    progressStepCount.textContent = `${completedSteps}/4`;
+    
+    // Toggle layouts
+    if (completedSteps === 4) {
+      if (!isSetupComplete) {
+        isSetupComplete = true;
+        setupWizardContainer.hidden = true;
+        mainDashboard.hidden = false;
+        loadConfig();
+        loadCars();
+      }
+    } else {
+      isSetupComplete = false;
+      setupWizardContainer.hidden = false;
+      mainDashboard.hidden = true;
+      
+      // Auto-expand first incomplete step if nothing is active
+      const steps = ["chrome", "env", "login", "keys"];
+      const stepStates = [
+        status.chromeInstalled,
+        status.envFileCreated,
+        status.geminiProfileLoggedIn,
+        status.requiredKeysSet
+      ];
+      
+      const anyActive = document.querySelector(".wizard-step.active");
+      if (!anyActive) {
+        for (let i = 0; i < steps.length; i++) {
+          if (!stepStates[i]) {
+            document.getElementById(`step-${steps[i]}`).classList.add("active");
+            break;
+          }
+        }
+      }
+    }
+    
+    // Pre-fill inputs with placeholders
+    if (status.envFileCreated && status.keysConfig) {
+      const keys = status.keysConfig;
+      
+      updateInputPlaceholder("wiz-gemini-key", keys.GEMINI_API_KEY);
+      updateInputPlaceholder("wiz-yt-id", keys.YOUTUBE_CLIENT_ID);
+      updateInputPlaceholder("wiz-yt-secret", keys.YOUTUBE_CLIENT_SECRET);
+      updateInputPlaceholder("wiz-yt-refresh", keys.YOUTUBE_REFRESH_TOKEN);
+      
+      if (keys.GEMINI_TEXT_MODEL?.isSet && !document.getElementById("wiz-gemini-model").value) {
+        document.getElementById("wiz-gemini-model").placeholder = keys.GEMINI_TEXT_MODEL.masked;
+      }
+      if (keys.YOUTUBE_PRIVACY_STATUS?.isSet) {
+        const val = keys.YOUTUBE_PRIVACY_STATUS.masked;
+        if (val) document.getElementById("wiz-yt-privacy").value = val;
+      }
+      updateInputPlaceholder("wiz-tg-token", keys.TELEGRAM_BOT_TOKEN);
+      if (keys.TELEGRAM_CHAT_ID?.isSet && !document.getElementById("wiz-tg-chat").value) {
+        document.getElementById("wiz-tg-chat").placeholder = keys.TELEGRAM_CHAT_ID.masked;
+      }
+    }
+  } catch (e) {
+    console.error("Lỗi kiểm tra setup:", e);
+  }
+}
+
+function updateInputPlaceholder(id, keyInfo) {
+  const input = document.getElementById(id);
+  if (keyInfo && keyInfo.isSet) {
+    input.placeholder = `Để trống để giữ nguyên (${keyInfo.masked})`;
+  } else {
+    input.placeholder = "Nhập giá trị mới...";
+  }
+}
+
+// Copy button handlers
+document.querySelectorAll(".btn-copy").forEach((btn) => {
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const text = btn.getAttribute("data-copy");
+    navigator.clipboard.writeText(text).then(() => {
+      btn.classList.add("copied");
+      const originalSvg = btn.innerHTML;
+      btn.innerHTML = `
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      `;
+      setTimeout(() => {
+        btn.classList.remove("copied");
+        btn.innerHTML = originalSvg;
+      }, 2000);
+    });
+  });
+});
+
+// Auto create .env file
+btnInitEnv.addEventListener("click", async () => {
+  const res = await fetch("/api/setup/init-env", { method: "POST" });
+  if (res.ok) {
+    await checkSetupStatus();
+  } else {
+    const err = await res.json();
+    alert("Không thể tạo file .env: " + err.error);
+  }
+});
+
+// Manual login status check
+btnCheckLogin.addEventListener("click", async () => {
+  checkLoginSpinIcon.style.display = "inline-block";
+  btnCheckLogin.querySelector("span").textContent = "Đang kết nối...";
+  btnCheckLogin.disabled = true;
+  
+  await checkSetupStatus();
+  
+  setTimeout(() => {
+    checkLoginSpinIcon.style.display = "none";
+    btnCheckLogin.querySelector("span").textContent = "Kiểm tra lại kết nối";
+    btnCheckLogin.disabled = false;
+  }, 1000);
+});
+
+// Toggle advanced fields
+btnToggleAdvanced.addEventListener("click", () => {
+  const isHidden = advancedConfigFields.style.display === "none";
+  if (isHidden) {
+    advancedConfigFields.style.display = "flex";
+    btnToggleAdvanced.textContent = "Ẩn cấu hình nâng cao ▴";
+  } else {
+    advancedConfigFields.style.display = "none";
+    btnToggleAdvanced.textContent = "Cấu hình nâng cao (Tùy chọn) ▾";
+  }
+});
+
+// Save config from Setup Wizard
+wizardConfigForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const body = {};
+  
+  const fields = {
+    GEMINI_API_KEY: "wiz-gemini-key",
+    YOUTUBE_CLIENT_ID: "wiz-yt-id",
+    YOUTUBE_CLIENT_SECRET: "wiz-yt-secret",
+    YOUTUBE_REFRESH_TOKEN: "wiz-yt-refresh",
+    GEMINI_TEXT_MODEL: "wiz-gemini-model",
+    YOUTUBE_PRIVACY_STATUS: "wiz-yt-privacy",
+    TELEGRAM_BOT_TOKEN: "wiz-tg-token",
+    TELEGRAM_CHAT_ID: "wiz-tg-chat"
+  };
+  
+  for (const [key, id] of Object.entries(fields)) {
+    const el = document.getElementById(id);
+    if (el && el.value) body[key] = el.value;
+  }
+  
+  wizardSaveStatus.className = "status-msg status-loading";
+  wizardSaveStatus.textContent = "Đang lưu cấu hình...";
+  
+  const res = await fetch("/api/config", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  
+  if (res.ok) {
+    wizardSaveStatus.className = "status-msg status-success";
+    wizardSaveStatus.textContent = "Đã lưu cấu hình thành công!";
+    
+    // Clear password inputs
+    for (const [key, id] of Object.entries(fields)) {
+      const el = document.getElementById(id);
+      if (el && el.type === "password") el.value = "";
+    }
+    
+    await checkSetupStatus();
+  } else {
+    const err = await res.json();
+    wizardSaveStatus.className = "status-msg status-error";
+    wizardSaveStatus.textContent = `Lỗi: ${err.error}`;
+  }
+});
+
+// Run initial check and set periodic status polling
+checkSetupStatus();
+setInterval(() => {
+  if (!isSetupComplete) {
+    checkSetupStatus();
+  }
+}, 3000);
+
+// --- SETTINGS DRAWER EVENT HANDLERS ---
+const settingsDrawer = document.getElementById("settings-drawer");
+const btnOpenSettings = document.getElementById("btn-open-settings");
+const btnCloseSettings = document.getElementById("btn-close-settings");
+const drawerOverlay = document.getElementById("drawer-overlay");
+
+function openSettings() {
+  settingsDrawer.hidden = false;
+  requestAnimationFrame(() => {
+    settingsDrawer.classList.add("active");
+  });
+}
+
+function closeSettings() {
+  settingsDrawer.classList.remove("active");
+  setTimeout(() => {
+    if (!settingsDrawer.classList.contains("active")) {
+      settingsDrawer.hidden = true;
+    }
+  }, 400);
+}
+
+btnOpenSettings?.addEventListener("click", openSettings);
+btnCloseSettings?.addEventListener("click", closeSettings);
+drawerOverlay?.addEventListener("click", closeSettings);

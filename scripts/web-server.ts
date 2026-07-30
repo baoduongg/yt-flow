@@ -1,7 +1,8 @@
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { readFile, readdir, copyFile } from "node:fs/promises";
 import { createJobRunner } from "../lib/web-job.ts";
 import { readEnvConfig, writeEnvConfig, KNOWN_ENV_KEYS, type EnvKey } from "../lib/env-file.ts";
 
@@ -15,12 +16,94 @@ const publicDir = path.join(projectRoot, "public");
 const port = Number(process.env.WEB_PORT ?? 3000);
 const runner = createJobRunner();
 
+function checkChromeInstalled(): boolean {
+  if (process.platform === "darwin") {
+    const homeDir = process.env.HOME || "";
+    return (
+      existsSync("/Applications/Google Chrome.app") ||
+      existsSync(path.join(homeDir, "Applications/Google Chrome.app"))
+    );
+  } else if (process.platform === "win32") {
+    const paths = [
+      "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    ];
+    return paths.some((p) => existsSync(p));
+  } else {
+    return true;
+  }
+}
+
+async function checkGeminiProfileLoggedIn(): Promise<boolean> {
+  try {
+    const profilePath = process.env.GEMINI_PROFILE_DIR
+      ? path.resolve(projectRoot, process.env.GEMINI_PROFILE_DIR)
+      : path.join(projectRoot, ".gemini-profile");
+    if (!existsSync(profilePath)) return false;
+    const files = await readdir(profilePath);
+    return files.length > 0;
+  } catch (e) {
+    return false;
+  }
+}
+
 const app = express();
 app.use(express.json());
 app.use(express.static(publicDir));
 // express.static rejects path traversal / dotfile access by default, so this
 // safely scopes video preview access to the output/ directory.
 app.use("/media", express.static(outputDir));
+
+app.get("/api/setup-status", async (_req, res) => {
+  const envFileCreated = existsSync(envPath);
+  const chromeInstalled = checkChromeInstalled();
+  const geminiProfileLoggedIn = await checkGeminiProfileLoggedIn();
+
+  const keysConfig: Record<string, { isSet: boolean; masked: string }> = {} as any;
+  if (envFileCreated) {
+    const read = await readEnvConfig(envPath);
+    Object.assign(keysConfig, read);
+  } else {
+    for (const key of KNOWN_ENV_KEYS) {
+      keysConfig[key] = { isSet: false, masked: "" };
+    }
+  }
+
+  const requiredKeys: EnvKey[] = [
+    "GEMINI_API_KEY",
+    "YOUTUBE_CLIENT_ID",
+    "YOUTUBE_CLIENT_SECRET",
+    "YOUTUBE_REFRESH_TOKEN",
+  ];
+
+  const requiredKeysSet = requiredKeys.every((key) => keysConfig[key]?.isSet);
+
+  res.json({
+    envFileCreated,
+    chromeInstalled,
+    geminiProfileLoggedIn,
+    requiredKeysSet,
+    keysConfig,
+  });
+});
+
+app.post("/api/setup/init-env", async (_req, res) => {
+  try {
+    if (existsSync(envPath)) {
+      res.status(400).json({ error: "File .env đã tồn tại." });
+      return;
+    }
+    const envExamplePath = path.join(projectRoot, ".env.example");
+    if (!existsSync(envExamplePath)) {
+      res.status(400).json({ error: "Không tìm thấy file .env.example mẫu." });
+      return;
+    }
+    await copyFile(envExamplePath, envPath);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
 
 app.get("/api/config", async (_req, res) => {
   res.json(await readEnvConfig(envPath));
