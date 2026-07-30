@@ -63,19 +63,22 @@ export async function runPipeline(
 
   let videoPath: string;
   while (true) {
+    hooks.onStep?.("Đang tạo video bằng Gemini (Veo3), có thể mất vài phút...");
     videoPath = await deps.generateVideo(veoPrompt);
-    hooks.onStep?.(`Video đã sinh xong: ${videoPath}`);
+    hooks.onStep?.(`Video đã tạo xong: ${videoPath}`);
 
     const approved = await hooks.confirmVideo(videoPath);
     if (approved) break;
 
-    hooks.onStep?.("Bị từ chối, sinh lại video...");
+    hooks.onStep?.("Bị từ chối, đang tạo lại video...");
     await deps.unlink(videoPath);
   }
 
+  hooks.onStep?.("Đang tạo tiêu đề/mô tả/tag cho YouTube...");
   const metadata = await deps.generateMetadata(car);
   hooks.onStep?.(`Metadata đã sinh xong: ${metadata.title}`);
 
+  hooks.onStep?.("Đang upload video lên YouTube...");
   const videoUrl = await deps.uploadToYoutube(videoPath, metadata);
   await deps.unlink(videoPath);
   hooks.onStep?.(`Đã đăng: ${videoUrl}`);
