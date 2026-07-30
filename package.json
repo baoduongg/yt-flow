@@ -7,15 +7,18 @@
     "pipeline": "tsx --env-file=.env scripts/run-shorts-pipeline.ts",
     "gemini:login": "tsx --env-file=.env scripts/gemini-login.ts",
     "bot": "tsx --env-file=.env scripts/telegram-bot.ts",
-    "test": "tsx --test lib/*.test.ts"
+    "test": "tsx --test lib/*.test.ts",
+    "web": "tsx --env-file=.env scripts/web-server.ts"
   },
   "dependencies": {
     "@google/genai": "^1.11.0",
+    "express": "^5.2.1",
     "googleapis": "^144.0.0",
     "grammy": "^1.45.1",
     "playwright": "^1.48.0"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
