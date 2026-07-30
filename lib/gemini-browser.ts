@@ -105,12 +105,30 @@ async function submitPrompt(page: Page, prompt: string): Promise<void> {
 // re-run gemini-inspect-result.ts if a different locale breaks this.
 const DOWNLOAD_BUTTON_NAME = /download|tải.*xuống/i;
 
+// Text seen on Gemini's own error toast/banner when generation can't proceed
+// (quota exhausted, content blocked, etc). Best-effort match — Google can
+// reword this; re-run scripts/gemini-inspect-result.ts against a triggered
+// error to check the live text if this stops catching something.
+const GENERATION_ERROR_TEXT =
+  /out of videos|upgrade to keep creating|something went wrong|unable to (create|generate)|hết lượt|nâng cấp|đã xảy ra lỗi/i;
+
+async function checkForGenerationError(page: Page): Promise<string | null> {
+  const errorLocator = page.getByText(GENERATION_ERROR_TEXT);
+  if (!(await errorLocator.first().isVisible().catch(() => false))) return null;
+  const text = await errorLocator.first().innerText().catch(() => null);
+  return text?.trim() || "Gemini báo lỗi khi tạo video (không đọc được nội dung chi tiết).";
+}
+
 async function waitForVideoReady(page: Page): Promise<void> {
   const deadline = Date.now() + GENERATION_TIMEOUT_MS;
   while (Date.now() < deadline) {
     const downloadButton = page.getByRole("button", { name: DOWNLOAD_BUTTON_NAME });
     if (await downloadButton.first().isVisible().catch(() => false)) {
       return;
+    }
+    const errorText = await checkForGenerationError(page);
+    if (errorText) {
+      throw new Error(`Gemini báo lỗi khi tạo video: ${errorText}`);
     }
     await page.waitForTimeout(POLL_INTERVAL_MS);
   }
@@ -141,6 +159,15 @@ export async function generateVideoViaBrowser(prompt: string): Promise<string> {
     await selectVeoMode(page);
     await selectVerticalAspectRatio(page);
     await submitPrompt(page, prompt);
+
+    // Check right away too — a quota/content error toast can appear and
+    // fade before the first poll in waitForVideoReady would catch it.
+    await page.waitForTimeout(2000);
+    const earlyError = await checkForGenerationError(page);
+    if (earlyError) {
+      throw new Error(`Gemini báo lỗi khi tạo video: ${earlyError}`);
+    }
+
     await waitForVideoReady(page);
     return await downloadVideo(page);
   } finally {
