@@ -38,6 +38,36 @@ Pipeline tự động: chọn xe, tạo video ASMR về xe đó, preview + xác 
 4. Tạo title/description/tags từ `prompt-create-info-video.md` qua Gemini API.
 5. Upload lên YouTube (privacy theo `YOUTUBE_PRIVACY_STATUS`, mặc định private) và xoá file video local.
 
+## Điều khiển từ xa qua Telegram
+
+`npm run bot` chạy 1 bot nền, cho phép kích hoạt và duyệt video ngay từ
+điện thoại — không cần đụng terminal sau khi đã khởi động bot.
+
+1. Tạo bot qua [@BotFather](https://t.me/BotFather), copy token vào
+   `TELEGRAM_BOT_TOKEN` trong `.env`.
+2. Gửi 1 tin nhắn bất kỳ cho bot, sau đó mở
+   `https://api.telegram.org/bot<token>/getUpdates` trên trình duyệt, copy
+   `message.chat.id` vào `TELEGRAM_CHAT_ID` trong `.env`. Chỉ chat này được
+   ra lệnh — chat khác bị bỏ qua hoàn toàn (không phản hồi).
+3. `npm run bot`.
+4. Từ Telegram:
+   - `/run` — lấy xe tiếp theo trong queue, chạy toàn bộ pipeline.
+   - `/run Toyota Supra MK4` — chạy pipeline cho 1 xe cụ thể (phải khớp 1
+     dòng trong `data/cars.json`).
+   - `/status` — xem có đang chạy không, đang ở bước nào.
+   - Khi video sinh xong, bạn nhận được video kèm nút **Duyệt** / **Làm
+     lại**. Nếu video quá lớn để gửi qua Telegram (>50MB), mở trực tiếp
+     đường dẫn được in ra trên máy rồi gõ `/approve` hoặc `/reject`.
+
+Giữ bot chạy nền bằng [pm2](https://pm2.keymetrics.io/) (chạy giống nhau
+trên macOS và Windows):
+
+```bash
+npm install -g pm2
+pm2 start npm --name yt-flow-bot -- run bot
+pm2 save
+```
+
 ## Nếu Google đổi giao diện Gemini
 
 Selector trong `lib/gemini-browser.ts` bám theo DOM thật, có thể bị vỡ khi Google đổi UI. Công cụ debug:

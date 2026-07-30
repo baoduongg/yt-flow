@@ -38,6 +38,37 @@ Automated pipeline: pick a car, generate an ASMR-style video of it, preview and 
 4. Generates title/description/tags from `prompt-create-info-video.md` via the Gemini API.
 5. Uploads to YouTube (privacy from `YOUTUBE_PRIVACY_STATUS`, defaults to private) and deletes the local video file.
 
+## Remote control via Telegram
+
+`npm run bot` starts a long-running bot that lets you trigger and approve
+runs from your phone — no terminal needed after it's started.
+
+1. Create a bot with [@BotFather](https://t.me/BotFather), copy the token
+   into `TELEGRAM_BOT_TOKEN` in `.env`.
+2. Send any message to your new bot, then open
+   `https://api.telegram.org/bot<token>/getUpdates` in a browser and copy
+   `message.chat.id` into `TELEGRAM_CHAT_ID` in `.env`. Only this chat can
+   issue commands — everyone else is silently ignored.
+3. `npm run bot`.
+4. From Telegram:
+   - `/run` — pick the next car from the queue and run the full pipeline.
+   - `/run Toyota Supra MK4` — run the pipeline for a specific car (must
+     match an entry in `data/cars.json`).
+   - `/status` — check whether a run is in progress and which step it's on.
+   - When a video is generated you'll receive it with **Duyệt** (approve)
+     / **Làm lại** (regenerate) buttons. If the video is too large for
+     Telegram to send (>50MB), open the printed path on the machine
+     directly and reply `/approve` or `/reject` instead.
+
+Keep it running in the background with [pm2](https://pm2.keymetrics.io/)
+(works the same on macOS and Windows):
+
+```bash
+npm install -g pm2
+pm2 start npm --name yt-flow-bot -- run bot
+pm2 save
+```
+
 ## If Google changes the Gemini UI
 
 Selectors in `lib/gemini-browser.ts` are tied to the live DOM and can break. Debug tools:
