@@ -1,10 +1,11 @@
 import { chromium, type BrowserContext, type Page } from "playwright";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { tmpdir } from "node:os";
+import { mkdir } from "node:fs/promises";
 
 const projectRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_PROFILE_DIR = path.join(projectRoot, ".gemini-profile");
+const OUTPUT_DIR = path.join(projectRoot, "output");
 const GEMINI_URL = "https://gemini.google.com/app";
 const GEMINI_VIDEO_URL = "https://gemini.google.com/videos";
 
@@ -119,7 +120,8 @@ async function waitForVideoReady(page: Page): Promise<void> {
 async function downloadVideo(page: Page): Promise<string> {
   const downloadButton = page.getByRole("button", { name: DOWNLOAD_BUTTON_NAME }).first();
   const [download] = await Promise.all([page.waitForEvent("download"), downloadButton.click()]);
-  const outputPath = path.join(tmpdir(), `veo-${Date.now()}.mp4`);
+  await mkdir(OUTPUT_DIR, { recursive: true });
+  const outputPath = path.join(OUTPUT_DIR, `veo-${Date.now()}.mp4`);
   await download.saveAs(outputPath);
   return outputPath;
 }

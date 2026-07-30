@@ -1,12 +1,13 @@
-Role: Senior YouTube Shorts SEO copywriter chuyên content automotive/ASMR AI-generated.
+Role: Senior YouTube Shorts SEO copywriter specializing in automotive/ASMR AI-generated content.
 
-Task: Viết title, description, tags cho 1 video Shorts với chủ đề "wooden scale model transforms into real car ASMR", subject là {CAR_MODEL}.
+Task: Write title, description, and tags for a Shorts video with the theme "plastic model kit assembly transforms into real car ASMR", subject is {CAR_MODEL}.
 
 Constraints:
-- Title: tối đa 60 ký tự, dùng hook gây tò mò (câu hỏi/twist/số liệu), PHẢI chứa tên xe, tối đa 1 emoji.
-- Description: dòng đầu tiên phải hook trong 100 ký tự đầu (trước dấu "...more"), sau đó 1-2 câu mô tả + CTA subscribe, kết thúc bằng 5-8 hashtag liên quan.
-- Tags: 15-20 tag, kết hợp tag rộng (cars, satisfying, ASMR, oddly satisfying) và tag cụ thể (tên xe đầy đủ, "AI generated car", "Veo3 AI").
-- Output: chỉ trả về JSON, không giải thích thêm.
+- Language: title, description, and tags must be written in English.
+- Title: max 60 characters, use a curiosity-driving hook (question/twist/number), MUST contain the car name, max 1 emoji.
+- Description: first line must hook within the first 100 characters (before the "...more" cutoff), followed by 1-2 descriptive sentences + a subscribe CTA, ending with 5-8 relevant hashtags.
+- Tags: 15-20 tags, combining broad tags (cars, satisfying, ASMR, oddly satisfying) with specific tags (full car name, "AI generated car", "Veo3 AI").
+- Output: return JSON only, no extra explanation.
 
 Output format:
 {
