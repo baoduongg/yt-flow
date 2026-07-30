@@ -1,0 +1,52 @@
+# yt-flow
+
+[English](README.md)
+
+Pipeline tự động: chọn xe, tạo video ASMR về xe đó, preview + xác nhận, tạo metadata YouTube, upload YouTube.
+
+## Cài đặt
+
+1. Copy `.env.example` thành `.env`, điền các key bên dưới.
+2. `npm install`, sau đó `npx playwright install chromium`.
+3. Login Gemini 1 lần: `npm run gemini:login` (mở cửa sổ Chrome thật, login tay, Enter ở terminal khi xong — session lưu tại `.gemini-profile/`, không commit vào git).
+
+### Lấy các key trong `.env`
+
+**`GEMINI_API_KEY`** — chỉ dùng để tạo metadata (title/description/tags), không dùng cho video:
+1. Vào [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+2. Bấm "Create API key", chọn hoặc tạo project Google Cloud.
+3. Copy key vào `.env`.
+
+**`YOUTUBE_CLIENT_ID` / `YOUTUBE_CLIENT_SECRET`** — OAuth client để upload video:
+1. Vào [Google Cloud Console](https://console.cloud.google.com/), chọn/tạo project, bật **YouTube Data API v3** (APIs & Services → Library).
+2. APIs & Services → Credentials → Create Credentials → OAuth client ID → Application type **Desktop app**.
+3. Copy Client ID và Client Secret vào `.env`.
+4. Nếu được yêu cầu, cấu hình OAuth consent screen trước (chọn External, chế độ testing dùng được cho cá nhân — thêm chính tài khoản Google của bạn vào test user).
+
+**`YOUTUBE_REFRESH_TOKEN`** — lấy 1 lần qua OAuth flow thủ công, ví dụ dùng [Google OAuth 2.0 Playground](https://developers.google.com/oauthplayground):
+1. Bấm icon bánh răng (góc trên phải) → tick "Use your own OAuth credentials" → dán `YOUTUBE_CLIENT_ID`/`YOUTUBE_CLIENT_SECRET`.
+2. Ở danh sách scope (hoặc gõ tay), nhập `https://www.googleapis.com/auth/youtube.upload`, bấm **Authorize APIs**, đăng nhập bằng tài khoản Google sở hữu kênh YouTube đích.
+3. Bấm **Exchange authorization code for tokens** — copy giá trị **Refresh token** vào `.env`.
+
+## Chạy
+
+`npm run pipeline`:
+
+1. Lấy xe tiếp theo từ `data/cars-queue.json` (tự nạp lại từ `data/cars.json` khi hết).
+2. Điền xe vào `prompt-veo3.md`, tạo video bằng cách điều khiển `gemini.google.com` qua Playwright (`lib/gemini-browser.ts`) — không cần Veo3 API key. Lưu tại `output/veo-<timestamp>.mp4`.
+3. Mở video để bạn xem trước. Xác nhận ở terminal: `y` tiếp tục upload, `n` xoá và tạo lại video.
+4. Tạo title/description/tags từ `prompt-create-info-video.md` qua Gemini API.
+5. Upload lên YouTube (privacy theo `YOUTUBE_PRIVACY_STATUS`, mặc định private) và xoá file video local.
+
+## Nếu Google đổi giao diện Gemini
+
+Selector trong `lib/gemini-browser.ts` bám theo DOM thật, có thể bị vỡ khi Google đổi UI. Công cụ debug:
+
+- `npx tsx --env-file=.env scripts/gemini-test-video.ts "test prompt"` — chạy riêng flow gen video.
+- `npx tsx --env-file=.env scripts/gemini-inspect.ts [url]` — dump cây accessibility của 1 trang Gemini.
+- `npx tsx --env-file=.env scripts/gemini-inspect-result.ts "prompt"` — submit prompt rồi dump DOM mỗi 60s tới khi video xong.
+- `npx tsx --env-file=.env scripts/gemini-inspect-ratio.ts` — dump menu chọn tỷ lệ khung hình.
+
+## File khác
+
+- `next-car.sh` — helper độc lập, lấy 1 xe từ `cars-queue.txt`/`cars-master.txt`, điền cả 2 prompt template vào `output/<slug>-<timestamp>/`, dùng thủ công ngoài pipeline tự động.
