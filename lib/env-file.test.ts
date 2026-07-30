@@ -11,7 +11,7 @@ test("parseEnvFile ignores comments and blank lines", () => {
 });
 
 test("maskValue masks long values keeping first/last 4 chars", () => {
-  assert.equal(maskValue("AIzaSyABCDEFGHIJK"), "AIza****GHIJK");
+  assert.equal(maskValue("AIzaSyABCDEFGHIJK"), "AIza****HIJK");
 });
 
 test("maskValue fully masks short values", () => {

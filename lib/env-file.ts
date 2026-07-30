@@ -28,7 +28,7 @@ export function parseEnvFile(content: string): Record<string, string> {
 export function maskValue(value: string): string {
   if (!value) return "";
   if (value.length <= 8) return "*".repeat(value.length);
-  return `${value.slice(0, 4)}****${value.slice(-5)}`;
+  return `${value.slice(0, 4)}****${value.slice(-4)}`;
 }
 
 async function readExisting(envPath: string): Promise<Record<string, string>> {
