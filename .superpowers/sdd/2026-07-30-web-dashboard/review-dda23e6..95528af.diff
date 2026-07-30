@@ -1,0 +1,313 @@
+# Review package: dda23e6e59f1bfe3d66fc7cdf221da7d5866d27d..HEAD
+
+## Commits
+95528af feat: add in-memory job state machine wrapping runPipeline
+9aa83b5 refactor: extract shared pipeline mock deps into lib/test-support.ts
+
+## Files changed
+ lib/pipeline.test.ts |  36 ++++---------------
+ lib/test-support.ts  |  28 +++++++++++++++
+ lib/web-job.test.ts  |  62 ++++++++++++++++++++++++++++++++
+ lib/web-job.ts       | 100 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 196 insertions(+), 30 deletions(-)
+
+## Diff
+diff --git a/lib/pipeline.test.ts b/lib/pipeline.test.ts
+index 87f31e9..f3ad819 100644
+--- a/lib/pipeline.test.ts
++++ b/lib/pipeline.test.ts
+@@ -1,80 +1,56 @@
+ import { test } from "node:test";
+ import assert from "node:assert/strict";
+-import { runPipeline, type PipelineDeps } from "./pipeline.ts";
++import { runPipeline } from "./pipeline.ts";
++import { makeMockDeps } from "./test-support.ts";
+ import type { VideoMetadata } from "./generate-metadata.ts";
+ 
+-function makeDeps(): PipelineDeps & {
+-  calls: { generateVideo: number; unlink: number; uploadToYoutube: number; generateMetadata: number };
+-} {
+-  const calls = { generateVideo: 0, unlink: 0, uploadToYoutube: 0, generateMetadata: 0 };
+-  return {
+-    calls,
+-    pickNextCar: async () => "Test Car",
+-    generateVideo: async () => {
+-      calls.generateVideo++;
+-      return `/tmp/video-${calls.generateVideo}.mp4`;
+-    },
+-    generateMetadata: async () => {
+-      calls.generateMetadata++;
+-      return { title: "t", description: "d", tags: [] };
+-    },
+-    uploadToYoutube: async () => {
+-      calls.uploadToYoutube++;
+-      return "https://youtu.be/test";
+-    },
+-    unlink: async () => {
+-      calls.unlink++;
+-    },
+-  };
+-}
+-
+ test("confirmVideo false triggers regeneration, true continues to upload", async () => {
+-  const deps = makeDeps();
++  const deps = makeMockDeps();
+   let confirmCalls = 0;
+   const confirmVideo = async () => {
+     confirmCalls++;
+     return confirmCalls >= 2;
+   };
+ 
+   const result = await runPipeline({}, { confirmVideo }, deps);
+ 
+   assert.equal(deps.calls.generateVideo, 2);
+   assert.equal(deps.calls.unlink, 2);
+   assert.equal(deps.calls.uploadToYoutube, 1);
+   assert.equal(deps.calls.generateMetadata, 1);
+   assert.equal(result.videoUrl, "https://youtu.be/test");
+   assert.equal(result.car, "Test Car");
+ });
+ 
+ test("confirmVideo true immediately uploads on first try", async () => {
+-  const deps = makeDeps();
++  const deps = makeMockDeps();
+   const result = await runPipeline({}, { confirmVideo: async () => true }, deps);
+ 
+   assert.equal(deps.calls.generateVideo, 1);
+   assert.equal(deps.calls.unlink, 1);
+   assert.equal(deps.calls.uploadToYoutube, 1);
+   assert.equal(result.car, "Test Car");
+ });
+ 
+ test("invalid carOverride throws before generating any video", async () => {
+-  const deps = makeDeps();
++  const deps = makeMockDeps();
+ 
+   await assert.rejects(
+     () => runPipeline({ carOverride: "Không Tồn Tại XYZ" }, { confirmVideo: async () => true }, deps),
+     /Không tìm thấy xe/,
+   );
+   assert.equal(deps.calls.generateVideo, 0);
+ });
+ 
+ test("confirmMetadata edits metadata before upload", async () => {
+-  const deps = makeDeps();
++  const deps = makeMockDeps();
+   const uploaded: VideoMetadata[] = [];
+   deps.uploadToYoutube = async (_path, meta) => {
+     uploaded.push(meta);
+     return "https://youtu.be/edited";
+   };
+ 
+   const result = await runPipeline(
+     {},
+     {
+       confirmVideo: async () => true,
+diff --git a/lib/test-support.ts b/lib/test-support.ts
+new file mode 100644
+index 0000000..5af283f
+--- /dev/null
++++ b/lib/test-support.ts
+@@ -0,0 +1,28 @@
++import type { PipelineDeps } from "./pipeline.ts";
++
++export type MockDeps = PipelineDeps & {
++  calls: { generateVideo: number; unlink: number; uploadToYoutube: number; generateMetadata: number };
++};
++
++export function makeMockDeps(): MockDeps {
++  const calls = { generateVideo: 0, unlink: 0, uploadToYoutube: 0, generateMetadata: 0 };
++  return {
++    calls,
++    pickNextCar: async () => "Test Car",
++    generateVideo: async () => {
++      calls.generateVideo++;
++      return `/tmp/video-${calls.generateVideo}.mp4`;
++    },
++    generateMetadata: async () => {
++      calls.generateMetadata++;
++      return { title: "t", description: "d", tags: [] };
++    },
++    uploadToYoutube: async () => {
++      calls.uploadToYoutube++;
++      return "https://youtu.be/test";
++    },
++    unlink: async () => {
++      calls.unlink++;
++    },
++  };
++}
+diff --git a/lib/web-job.test.ts b/lib/web-job.test.ts
+new file mode 100644
+index 0000000..0d51925
+--- /dev/null
++++ b/lib/web-job.test.ts
+@@ -0,0 +1,62 @@
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { createJobRunner, type JobRunner, type JobState } from "./web-job.ts";
++import { makeMockDeps } from "./test-support.ts";
++
++function waitForPhase(runner: JobRunner, phase: JobState["phase"]): Promise<JobState> {
++  return new Promise((resolve) => {
++    const unsubscribe = runner.subscribe((state) => {
++      if (state.phase === phase) {
++        unsubscribe();
++        resolve(state);
++      }
++    });
++  });
++}
++
++test("start() goes idle -> running -> awaiting-video -> awaiting-metadata -> done", async () => {
++  const deps = makeMockDeps();
++  const runner = createJobRunner(deps);
++  assert.equal(runner.getState().phase, "idle");
++
++  assert.equal(runner.start(), true);
++  const awaitingVideo = await waitForPhase(runner, "awaiting-video");
++  assert.equal(awaitingVideo.phase, "awaiting-video");
++
++  const awaitingMetadata = waitForPhase(runner, "awaiting-metadata");
++  assert.equal(runner.decideVideo(true), true);
++  await awaitingMetadata;
++
++  const done = waitForPhase(runner, "done");
++  assert.equal(runner.decideMetadata({ title: "Edited", description: "d", tags: [] }), true);
++  const finalState = await done;
++  assert.equal(finalState.phase, "done");
++  assert.equal(deps.calls.uploadToYoutube, 1);
++});
++
++test("start() returns false while a job is already busy", async () => {
++  const deps = makeMockDeps();
++  const runner = createJobRunner(deps);
++  runner.start();
++  await waitForPhase(runner, "awaiting-video");
++  assert.equal(runner.start(), false);
++});
++
++test("decideVideo(false) regenerates the video before reaching awaiting-metadata", async () => {
++  const deps = makeMockDeps();
++  const runner = createJobRunner(deps);
++  runner.start();
++  await waitForPhase(runner, "awaiting-video");
++
++  const secondAwaitingVideo = waitForPhase(runner, "awaiting-video");
++  assert.equal(runner.decideVideo(false), true);
++  await secondAwaitingVideo;
++
++  assert.equal(deps.calls.generateVideo, 2);
++});
++
++test("decideVideo/decideMetadata return false when nothing is pending", () => {
++  const runner = createJobRunner(makeMockDeps());
++  assert.equal(runner.decideVideo(true), false);
++  assert.equal(runner.decideMetadata({ title: "", description: "", tags: [] }), false);
++});
+diff --git a/lib/web-job.ts b/lib/web-job.ts
+new file mode 100644
+index 0000000..a70138e
+--- /dev/null
++++ b/lib/web-job.ts
+@@ -0,0 +1,100 @@
++import { defaultDeps, runPipeline, type PipelineDeps } from "./pipeline.ts";
++import type { VideoMetadata } from "./generate-metadata.ts";
++
++export type JobState =
++  | { phase: "idle" }
++  | { phase: "running"; car: string; step: string }
++  | { phase: "awaiting-video"; car: string; videoPath: string }
++  | { phase: "awaiting-metadata"; car: string; metadata: VideoMetadata }
++  | { phase: "done"; car: string; youtubeUrl: string }
++  | { phase: "error"; message: string };
++
++export type JobRunner = {
++  getState: () => JobState;
++  subscribe: (listener: (state: JobState) => void) => () => void;
++  start: (carOverride?: string) => boolean;
++  decideVideo: (approved: boolean) => boolean;
++  decideMetadata: (metadata: VideoMetadata) => boolean;
++};
++
++export function createJobRunner(deps: PipelineDeps = defaultDeps): JobRunner {
++  let state: JobState = { phase: "idle" };
++  let currentCar = "";
++  const listeners = new Set<(state: JobState) => void>();
++  let pendingVideoResolve: ((approved: boolean) => void) | null = null;
++  let pendingMetadataResolve: ((metadata: VideoMetadata) => void) | null = null;
++
++  function setState(next: JobState): void {
++    state = next;
++    for (const listener of listeners) listener(state);
++  }
++
++  function isBusy(): boolean {
++    return state.phase === "running" || state.phase === "awaiting-video" || state.phase === "awaiting-metadata";
++  }
++
++  function start(carOverride?: string): boolean {
++    if (isBusy()) return false;
++
++    currentCar = carOverride ?? "(đang chọn...)";
++    setState({ phase: "running", car: currentCar, step: "Bắt đầu" });
++
++    runPipeline(
++      { carOverride },
++      {
++        onStep: (message) => {
++          if (message.startsWith("Xe: ")) currentCar = message.slice("Xe: ".length);
++          setState({ phase: "running", car: currentCar, step: message });
++        },
++        confirmVideo: (videoPath) =>
++          new Promise<boolean>((resolve) => {
++            pendingVideoResolve = resolve;
++            setState({ phase: "awaiting-video", car: currentCar, videoPath });
++          }),
++        confirmMetadata: (metadata) =>
++          new Promise<VideoMetadata>((resolve) => {
++            pendingMetadataResolve = resolve;
++            setState({ phase: "awaiting-metadata", car: currentCar, metadata });
++          }),
++      },
++      deps,
++    )
++      .then((result) => {
++        setState({ phase: "done", car: result.car, youtubeUrl: result.videoUrl });
++      })
++      .catch((err) => {
++        setState({ phase: "error", message: (err as Error).message });
++      })
++      .finally(() => {
++        pendingVideoResolve = null;
++        pendingMetadataResolve = null;
++      });
++
++    return true;
++  }
++
++  function decideVideo(approved: boolean): boolean {
++    if (!pendingVideoResolve) return false;
++    pendingVideoResolve(approved);
++    pendingVideoResolve = null;
++    return true;
++  }
++
++  function decideMetadata(metadata: VideoMetadata): boolean {
++    if (!pendingMetadataResolve) return false;
++    pendingMetadataResolve(metadata);
++    pendingMetadataResolve = null;
++    return true;
++  }
++
++  return {
++    getState: () => state,
++    subscribe: (listener) => {
++      listeners.add(listener);
++      return () => listeners.delete(listener);
++    },
++    start,
++    decideVideo,
++    decideMetadata,
++  };
++}

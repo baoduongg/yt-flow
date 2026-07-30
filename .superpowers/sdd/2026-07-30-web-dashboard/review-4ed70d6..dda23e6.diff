@@ -1,0 +1,65 @@
+# Review package: 4ed70d6..HEAD
+
+## Commits
+dda23e6 fix: maskValue should keep last 4 chars, not 5
+
+## Files changed
+ lib/env-file.test.ts | 2 +-
+ lib/env-file.ts      | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+## Diff
+diff --git a/lib/env-file.test.ts b/lib/env-file.test.ts
+index 30afefa..d134e37 100644
+--- a/lib/env-file.test.ts
++++ b/lib/env-file.test.ts
+@@ -4,21 +4,21 @@ import { mkdtemp, rm } from "node:fs/promises";
+ import { tmpdir } from "node:os";
+ import path from "node:path";
+ import { parseEnvFile, maskValue, readEnvConfig, writeEnvConfig } from "./env-file.ts";
+ 
+ test("parseEnvFile ignores comments and blank lines", () => {
+   const content = "# comment\nFOO=bar\n\nBAZ=qux\n";
+   assert.deepEqual(parseEnvFile(content), { FOO: "bar", BAZ: "qux" });
+ });
+ 
+ test("maskValue masks long values keeping first/last 4 chars", () => {
+-  assert.equal(maskValue("AIzaSyABCDEFGHIJK"), "AIza****GHIJK");
++  assert.equal(maskValue("AIzaSyABCDEFGHIJK"), "AIza****HIJK");
+ });
+ 
+ test("maskValue fully masks short values", () => {
+   assert.equal(maskValue("abc"), "***");
+   assert.equal(maskValue(""), "");
+ });
+ 
+ test("writeEnvConfig merges updates, readEnvConfig reflects them, blank keeps existing", async () => {
+   const dir = await mkdtemp(path.join(tmpdir(), "yt-flow-env-"));
+   const envPath = path.join(dir, ".env");
+diff --git a/lib/env-file.ts b/lib/env-file.ts
+index a91a0e0..2308844 100644
+--- a/lib/env-file.ts
++++ b/lib/env-file.ts
+@@ -21,21 +21,21 @@ export function parseEnvFile(content: string): Record<string, string> {
+     const eq = trimmed.indexOf("=");
+     if (eq === -1) continue;
+     result[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
+   }
+   return result;
+ }
+ 
+ export function maskValue(value: string): string {
+   if (!value) return "";
+   if (value.length <= 8) return "*".repeat(value.length);
+-  return `${value.slice(0, 4)}****${value.slice(-5)}`;
++  return `${value.slice(0, 4)}****${value.slice(-4)}`;
+ }
+ 
+ async function readExisting(envPath: string): Promise<Record<string, string>> {
+   try {
+     return parseEnvFile(await readFile(envPath, "utf-8"));
+   } catch (err) {
+     if ((err as NodeJS.ErrnoException).code === "ENOENT") return {};
+     throw err;
+   }
+ }
