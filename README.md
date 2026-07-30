@@ -69,6 +69,19 @@ pm2 start npm --name yt-flow-bot -- run bot
 pm2 save
 ```
 
+## Web dashboard
+
+`npm run web` starts a local dashboard at `http://127.0.0.1:3000` (override the port with `WEB_PORT`) for setting up keys, picking a car, generating, previewing, and approving in the browser instead of the terminal or Telegram.
+
+1. `npm run web`.
+2. Open `http://127.0.0.1:3000`.
+3. Fill in the keys in the Setup section and save (existing values show masked; leave a field blank to keep it unchanged).
+4. Pick a car from the dropdown (optional — leave blank to use the normal queue order) and click **Generate**.
+5. Once the video is ready, preview it inline and click **Duyệt** (approve) or **Từ chối** (reject and regenerate).
+6. Edit the generated title/description/tags if needed, then click **Upload** to publish to YouTube.
+
+The dashboard binds to `127.0.0.1` only and has no login — it's meant for local, single-user use. Run only one of the web dashboard, `npm run bot`, or `npm run pipeline` at a time; running more than one against the same `data/cars-queue.json` at once can race.
+
 ## If Google changes the Gemini UI
 
 Selectors in `lib/gemini-browser.ts` are tied to the live DOM and can break. Debug tools:

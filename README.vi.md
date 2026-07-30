@@ -68,6 +68,19 @@ pm2 start npm --name yt-flow-bot -- run bot
 pm2 save
 ```
 
+## Giao diện web
+
+`npm run web` chạy 1 dashboard local tại `http://127.0.0.1:3000` (đổi port bằng `WEB_PORT`) để setup key, chọn xe, generate, preview và duyệt ngay trên trình duyệt thay vì terminal hoặc Telegram.
+
+1. `npm run web`.
+2. Mở `http://127.0.0.1:3000`.
+3. Điền key ở phần Setup rồi lưu (giá trị cũ hiện dạng che bớt; để trống ô nào nghĩa là giữ nguyên giá trị đó).
+4. Chọn 1 xe cụ thể từ dropdown (tuỳ chọn — để trống dùng thứ tự queue mặc định) rồi bấm **Generate**.
+5. Video sinh xong, preview ngay trên trang, bấm **Duyệt** hoặc **Từ chối** (tạo lại).
+6. Sửa title/description/tags nếu cần, bấm **Upload** để đăng lên YouTube.
+
+Dashboard chỉ bind `127.0.0.1`, không có đăng nhập — chỉ dành cho dùng local 1 người. Chỉ nên chạy 1 trong 3 cách (web dashboard / `npm run bot` / `npm run pipeline`) tại 1 thời điểm — chạy nhiều cái cùng lúc có thể tranh nhau `data/cars-queue.json`.
+
 ## Nếu Google đổi giao diện Gemini
 
 Selector trong `lib/gemini-browser.ts` bám theo DOM thật, có thể bị vỡ khi Google đổi UI. Công cụ debug:
