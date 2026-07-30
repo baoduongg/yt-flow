@@ -28,8 +28,7 @@ async function confirmVideo(videoPath: string): Promise<boolean> {
 }
 
 async function main(): Promise<void> {
-  const result = await runPipeline({}, { onStep: (message) => console.log(message), confirmVideo });
-  console.log(`Published: ${result.videoUrl}`);
+  await runPipeline({}, { onStep: (message) => console.log(message), confirmVideo });
 }
 
 main().catch((err) => {
