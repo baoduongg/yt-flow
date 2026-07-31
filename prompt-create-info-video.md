@@ -4,8 +4,12 @@ Task: Write title, description, and tags for a Shorts video with the theme "plas
 
 Constraints:
 - Language: title, description, and tags must be written in English.
-- Title: max 60 characters, use a curiosity-driving hook (question/twist/number), MUST contain the car name, max 1 emoji.
-- Description: first line must hook within the first 100 characters (before the "...more" cutoff), followed by 1-2 descriptive sentences + a subscribe CTA, ending with 5-8 relevant hashtags.
+- Title: max 60 characters, use a curiosity-driving hook (question/twist/number), MUST contain the car name, max 1 emoji, and MUST end with 1-2 popular hashtags (specifically '#shorts' and/or #{CAR_MODEL} hashtag).
+- Description: Format the description with line breaks and emojis for high readability:
+  1. A strong hook line in the first 100 characters.
+  2. A blank line, then 2-3 engaging bulleted sentences describing the satisfying model kit to real car transformation.
+  3. A blank line, then a subscription call-to-action (CTA).
+  4. A blank line, then 5-8 relevant hashtags.
 - Tags: 15-20 tags, combining broad tags (cars, satisfying, ASMR, oddly satisfying) with specific tags (full car name, "AI generated car", "Veo3 AI").
 - Output: return JSON only, no extra explanation.
 

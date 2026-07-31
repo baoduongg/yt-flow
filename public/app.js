@@ -13,9 +13,20 @@ const sections = {
   result: document.getElementById("result"),
 };
 
-function hidePhaseSections() {
-  for (const el of Object.values(sections)) {
-    if (el) el.hidden = true;
+function showPhase(phaseKey, phaseKeySecondary = null) {
+  for (const [key, el] of Object.entries(sections)) {
+    if (!el) continue;
+    if (key === phaseKey || key === phaseKeySecondary) {
+      el.hidden = false;
+      el.classList.add("active");
+      // Trigger browser style recalculation before adding transition class
+      el.getBoundingClientRect();
+      el.classList.add("show");
+    } else {
+      el.classList.remove("show");
+      el.classList.remove("active");
+      el.hidden = true;
+    }
   }
 }
 
@@ -64,6 +75,7 @@ configForm.addEventListener("submit", async (e) => {
     configStatus.className = "status-msg status-success";
     configStatus.textContent = "Đã lưu thành công!";
     await loadConfig();
+    await loadYoutubeChannelInfo();
   } else {
     const err = await res.json();
     configStatus.className = "status-msg status-error";
@@ -73,48 +85,56 @@ configForm.addEventListener("submit", async (e) => {
 
 async function loadCars() {
   const { pool, queue } = await fetch("/api/cars").then((r) => r.json());
-  queueList.innerHTML = "";
-  if (queue.length === 0) {
-    const li = document.createElement("li");
-    li.className = "queue-empty";
-    li.textContent = "Hàng chờ trống";
-    queueList.appendChild(li);
-  } else {
-    for (const car of queue) {
+  if (queueList) {
+    queueList.innerHTML = "";
+    if (queue.length === 0) {
       const li = document.createElement("li");
-      li.className = "queue-item";
-      li.textContent = car;
+      li.className = "queue-empty";
+      li.textContent = "Hàng chờ trống";
       queueList.appendChild(li);
+    } else {
+      for (const car of queue) {
+        const li = document.createElement("li");
+        li.className = "queue-item";
+        li.textContent = car;
+        queueList.appendChild(li);
+      }
     }
   }
-  carSelect.innerHTML = '<option value="">-- dùng queue mặc định --</option>';
-  for (const car of pool) {
-    const option = document.createElement("option");
-    option.value = car;
-    option.textContent = car;
-    carSelect.appendChild(option);
+  if (carSelect) {
+    carSelect.innerHTML = '<option value="">-- dùng queue mặc định --</option>';
+    for (const car of pool) {
+      const option = document.createElement("option");
+      option.value = car;
+      option.textContent = car;
+      carSelect.appendChild(option);
+    }
   }
 }
 
 generateBtn.addEventListener("click", async () => {
   const car = carSelect.value || undefined;
-  generateStatus.className = "status-msg";
-  generateStatus.textContent = "Đang gửi yêu cầu khởi tạo...";
+  if (generateStatus) {
+    generateStatus.className = "status-msg";
+    generateStatus.textContent = "Đang gửi yêu cầu khởi tạo...";
+  }
   
   const res = await fetch("/api/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ car }),
   });
-  if (res.status === 409) {
-    generateStatus.className = "status-msg status-error";
-    generateStatus.textContent = "Đang bận, vui lòng đợi job hiện tại hoàn tất.";
-  } else if (!res.ok) {
-    generateStatus.className = "status-msg status-error";
-    generateStatus.textContent = "Không thể khởi tạo job. Vui lòng kiểm tra lại.";
-  } else {
-    generateStatus.className = "status-msg status-success";
-    generateStatus.textContent = "Khởi tạo thành công!";
+  if (generateStatus) {
+    if (res.status === 409) {
+      generateStatus.className = "status-msg status-error";
+      generateStatus.textContent = "Đang bận, vui lòng đợi job hiện tại hoàn tất.";
+    } else if (!res.ok) {
+      generateStatus.className = "status-msg status-error";
+      generateStatus.textContent = "Không thể khởi tạo job. Vui lòng kiểm tra lại.";
+    } else {
+      generateStatus.className = "status-msg status-success";
+      generateStatus.textContent = "Khởi tạo thành công!";
+    }
   }
 });
 
@@ -149,14 +169,16 @@ document.getElementById("upload-btn").addEventListener("click", () => {
   });
 });
 
-document.getElementById("reset-btn").addEventListener("click", () => {
-  hidePhaseSections();
-  loadCars();
+document.getElementById("reset-btn").addEventListener("click", async () => {
+  const res = await fetch("/api/reset", { method: "POST" });
+  if (res.ok) {
+    loadCars();
+  } else {
+    console.error("Lỗi khi reset trạng thái pipeline.");
+  }
 });
 
 function renderState(state) {
-  hidePhaseSections();
-
   // Sync selected car info to Right Column Info Card
   const selectedCar = state.car || carSelect.value || "Mặc định (Queue)";
   const infoCarEl = document.getElementById("info-selected-car");
@@ -171,8 +193,16 @@ function renderState(state) {
   if (checkNav) checkNav.classList.remove("checked");
   if (checkRender) checkRender.classList.remove("checked");
 
+  // Sync the current phase as an attribute on the main dashboard container for CSS targeting
+  const boardEl = document.getElementById("main-dashboard");
+  if (boardEl) {
+    boardEl.setAttribute("data-phase", state.phase || "idle");
+  }
+
+  const reviewActionsEl = document.querySelector(".video-review-actions");
+
   if (state.phase === "running") {
-    sections.progress.hidden = false;
+    showPhase("progress");
     document.getElementById("progress-car").textContent = state.car || "Chưa xác định";
     document.getElementById("progress-step").textContent = state.step;
     
@@ -191,15 +221,24 @@ function renderState(state) {
       checkRender?.classList.add("checked");
     }
   } else if (state.phase === "awaiting-video") {
-    sections.videoReview.hidden = false;
-    const filename = state.videoPath.split("/").pop();
+    showPhase("videoReview");
+    const filename = state.videoPath.split(/[/\\]/).pop();
     document.getElementById("video-player").src = `/media/${filename}`;
+    if (reviewActionsEl) reviewActionsEl.style.display = "flex";
     
     checkLaunch?.classList.add("checked");
     checkNav?.classList.add("checked");
     checkRender?.classList.add("checked");
   } else if (state.phase === "awaiting-metadata") {
-    sections.metadataReview.hidden = false;
+    // Show both the video review and the metadata form for side-by-side editing
+    showPhase("videoReview", "metadataReview");
+    if (reviewActionsEl) reviewActionsEl.style.display = "none"; // Hide approve/reject actions
+    
+    if (state.videoPath) {
+      const filename = state.videoPath.split(/[/\\]/).pop();
+      document.getElementById("video-player").src = `/media/${filename}`;
+    }
+    
     document.getElementById("meta-title").value = state.metadata.title;
     document.getElementById("meta-description").value = state.metadata.description;
     document.getElementById("meta-tags").value = state.metadata.tags.join(", ");
@@ -208,21 +247,55 @@ function renderState(state) {
     checkNav?.classList.add("checked");
     checkRender?.classList.add("checked");
   } else if (state.phase === "done") {
-    sections.result.hidden = false;
+    showPhase("result");
+    
+    // Dynamically insert success icon wrapper
+    document.getElementById("result-icon-container").innerHTML = `
+      <div class="result-icon-glow success">
+        <div class="result-icon-circle success">
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <div class="result-ping success"></div>
+      </div>
+    `;
+    
+    document.getElementById("result-title").textContent = "Quy trình hoàn tất";
+    document.getElementById("result-header-text").textContent = "Hoàn thành quy trình Pipeline";
+    
     document.getElementById("result-message").innerHTML =
-      `<p class="success-alert">Đã đăng thành công lên YouTube!</p>
-       <a href="${state.youtubeUrl}" class="youtube-link-btn" target="_blank" rel="noopener">
-         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-           <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.107C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.388.511a3.003 3.003 0 0 0-2.11 2.107C0 8.053 0 12 0 12s0 3.948.502 5.837a3.003 3.003 0 0 0 2.11 2.107C4.495 20.455 12 20.455 12 20.455s7.505 0 9.388-.511a3.003 3.003 0 0 0 2.11-2.107C24 15.948 24 12 24 12s0-3.948-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-         </svg>
+      `<div class="success-alert">Đã đăng thành công lên YouTube!</div>
+       <a href="${state.youtubeUrl}" class="btn-youtube-premium" target="_blank" rel="noopener">
          <span>Xem video trên YouTube</span>
+         <span class="btn-icon-circle-youtube">
+           <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+             <path d="M8 5v14l11-7z"/>
+           </svg>
+         </span>
        </a>`;
   } else if (state.phase === "error") {
-    sections.result.hidden = false;
+    showPhase("result");
+    
+    // Dynamically insert error icon wrapper
+    document.getElementById("result-icon-container").innerHTML = `
+      <div class="result-icon-glow error">
+        <div class="result-icon-circle error">
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </div>
+      </div>
+    `;
+    
+    document.getElementById("result-title").textContent = "Gặp sự cố vận hành";
+    document.getElementById("result-header-text").textContent = "Lỗi quy trình Pipeline";
+    
     document.getElementById("result-message").innerHTML = 
-      `<p class="error-alert">Đã xảy ra lỗi: ${state.message}</p>`;
+      `<div class="error-alert">Đã xảy ra lỗi: ${state.message || "Không xác định"}</div>`;
   } else {
-    sections.idlePreview.hidden = false;
+    showPhase("idlePreview");
   }
 }
 
@@ -341,6 +414,7 @@ async function checkSetupStatus() {
         mainDashboard.hidden = false;
         loadConfig();
         loadCars();
+        loadYoutubeChannelInfo();
       }
     } else {
       isSetupComplete = false;
@@ -586,3 +660,105 @@ function updateStats() {
 }
 setInterval(updateStats, 1500);
 updateStats();
+
+async function loadYoutubeChannelInfo() {
+  const cardBody = document.getElementById("yt-channel-card-body");
+  if (!cardBody) return;
+  
+  // Set skeleton loading state
+  cardBody.innerHTML = `
+    <div class="yt-channel-skeleton">
+      <div class="skeleton-avatar"></div>
+      <div class="skeleton-meta">
+        <div class="skeleton-line title"></div>
+        <div class="skeleton-line handle"></div>
+      </div>
+    </div>
+    <div class="skeleton-details mt-3">
+      <div class="skeleton-detail-item"></div>
+      <div class="skeleton-detail-item"></div>
+    </div>
+  `;
+  
+  try {
+    const res = await fetch("/api/youtube-channel");
+    if (!res.ok) {
+      throw new Error("HTTP error " + res.status);
+    }
+    const info = await res.json();
+    if (!info) {
+      // Not configured or returned null
+      cardBody.innerHTML = `
+        <div class="yt-channel-error">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-warning">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <div class="yt-channel-error-text">Chưa kết nối YouTube</div>
+          <p class="small-text font-muted mt-1" style="text-align: center;">Vui lòng cấu hình YOUTUBE_REFRESH_TOKEN trong Cấu hình nhanh.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    if (info.error === "insufficient_scope") {
+      cardBody.innerHTML = `
+        <div class="yt-channel-error">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-danger">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <div class="yt-channel-error-text" style="color: var(--color-danger);">Quyền hạn không đủ</div>
+          <p class="small-text font-muted mt-1" style="text-align: center; padding: 0 0.5rem; line-height: 1.4;">
+            Token hiện tại thiếu quyền đọc thông tin kênh. Vui lòng cấp lại token với các scope:<br/>
+            <code style="display:inline-block; margin-top:0.25rem; font-size:10px; color:#ff4a6b; background:rgba(255,74,107,0.1); padding:1px 4px; border-radius:3px; word-break:break-all;">youtube.upload</code><br/>
+            <code style="display:inline-block; margin-top:0.25rem; font-size:10px; color:#ff4a6b; background:rgba(255,74,107,0.1); padding:1px 4px; border-radius:3px; word-break:break-all;">youtube.readonly</code>
+          </p>
+        </div>
+      `;
+      return;
+    }
+    
+    // Configured and active!
+    const formattedSubs = Number(info.subscriberCount).toLocaleString('vi-VN');
+    const formattedVideos = Number(info.videoCount).toLocaleString('vi-VN');
+    
+    cardBody.innerHTML = `
+      <div class="yt-channel-profile">
+        <img class="yt-channel-avatar" src="${info.thumbnail}" alt="${info.title}" />
+        <div class="yt-channel-meta">
+          <span class="yt-channel-title" title="${info.title}">${info.title}</span>
+          <span class="yt-channel-handle" title="${info.customUrl}">${info.customUrl || ''}</span>
+        </div>
+      </div>
+      <div class="video-info-list mt-3">
+        <div class="video-info-item">
+          <span class="label">Quyền riêng tư:</span>
+          <span class="value badge-privacy ${info.privacyStatus}">${info.privacyStatus}</span>
+        </div>
+        <div class="video-info-item">
+          <span class="label">Người đăng ký:</span>
+          <span class="value font-medium text-white">${formattedSubs}</span>
+        </div>
+        <div class="video-info-item">
+          <span class="label">Tổng số video:</span>
+          <span class="value font-medium text-white">${formattedVideos}</span>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    console.error("Lỗi tải thông tin kênh YouTube:", err);
+    cardBody.innerHTML = `
+      <div class="yt-channel-error">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-warning">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <div class="yt-channel-error-text">Không thể kết nối API</div>
+      </div>
+    `;
+  }
+}

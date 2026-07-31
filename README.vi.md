@@ -25,7 +25,7 @@ Pipeline tự động: chọn xe, tạo video ASMR về xe đó, preview + xác 
 
 **`YOUTUBE_REFRESH_TOKEN`** — lấy 1 lần qua OAuth flow thủ công, ví dụ dùng [Google OAuth 2.0 Playground](https://developers.google.com/oauthplayground):
 1. Bấm icon bánh răng (góc trên phải) → tick "Use your own OAuth credentials" → dán `YOUTUBE_CLIENT_ID`/`YOUTUBE_CLIENT_SECRET`.
-2. Ở danh sách scope (hoặc gõ tay), nhập `https://www.googleapis.com/auth/youtube.upload`, bấm **Authorize APIs**, đăng nhập bằng tài khoản Google sở hữu kênh YouTube đích.
+2. Ở ô nhập scope, nhập cả 2 scope cách nhau bằng dấu cách: `https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly` (hoặc chỉ cần `https://www.googleapis.com/auth/youtube` để có toàn quyền), bấm **Authorize APIs**, đăng nhập bằng tài khoản Google sở hữu kênh YouTube đích.
 3. Bấm **Exchange authorization code for tokens** — copy giá trị **Refresh token** vào `.env`.
 
 ## Chạy

@@ -1,52 +1,70 @@
 <!doctype html>
 <html lang="vi">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>yt-flow Dashboard</title>
+  <title>yt-flow Console — AI Video Automation</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="/style.css" />
 </head>
+
 <body>
+  <!-- Visual background grids and noise for depth -->
+  <div class="grid-overlay"></div>
+  <div class="noise-overlay"></div>
+
   <div class="dashboard-wrapper">
+    <!-- Header of the Console -->
     <header class="app-header">
       <div class="header-content">
         <div class="header-left">
-          <span class="header-tagline">Dashboard</span>
-          <h1 class="header-title">AI Video Generation</h1>
-          <p class="header-sub">Premium desktop web app</p>
+          <span class="header-tagline">Automation Engine</span>
+          <h1 class="header-title">yt-flow Console</h1>
         </div>
         <div class="header-right">
-          <span class="section-indicator">Section 1 of 3</span>
-          <div class="section-dots">
-            <span class="dot active"></span>
-            <span class="dot"></span>
-            <span class="dot"></span>
-          </div>
-          <!-- Keep this button for settings drawer functionality -->
-          <button id="btn-open-settings" style="display: none;"></button>
+          <!-- Button linked to the settings drawer -->
+          <button id="btn-open-settings" class="btn btn-secondary btn-icon-only" title="Mở cấu hình nhanh">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
+              </path>
+            </svg>
+          </button>
         </div>
       </div>
     </header>
 
-    <!-- Setup Wizard: displayed if setup is incomplete -->
+    <!-- Setup Wizard: Displayed when system configuration is incomplete -->
     <div id="setup-wizard-container" class="setup-wizard-container" hidden>
-      <div class="card glass setup-wizard-card">
-        <div class="card-header">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-          </svg>
-          <h2>Hướng dẫn thiết lập hệ thống (Setup Wizard)</h2>
-        </div>
-        <div class="card-body">
-          <p class="wizard-subtitle">Chào mừng bạn đến với <strong>yt-flow</strong>. Hãy hoàn tất các bước bên dưới để kích hoạt hệ thống tự động hóa video.</p>
-          
-          <div class="wizard-progress-bar">
-            <div id="wizard-progress-fill" class="wizard-progress-fill" style="width: 0%"></div>
+      <div class="bezel-shell setup-wizard-card">
+        <div class="bezel-core">
+          <div class="card-header-premium">
+            <div class="card-icon-wrapper">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+            </div>
+            <div class="card-title-group">
+              <h2>Hướng dẫn thiết lập hệ thống</h2>
+              <p class="wizard-subtitle">Chào mừng bạn đến với <strong>yt-flow</strong>. Hãy hoàn tất các bước bên dưới
+                để kích hoạt hệ thống tự động hóa video.</p>
+            </div>
           </div>
-          <p class="wizard-progress-text">Hoàn thành: <span id="wizard-progress-step-count">0/4</span> bước</p>
+
+          <div class="wizard-progress-section">
+            <div class="wizard-progress-bar">
+              <div id="wizard-progress-fill" class="wizard-progress-fill" style="width: 0%"></div>
+            </div>
+            <p class="wizard-progress-text">Hoàn thành: <span id="wizard-progress-step-count">0/4</span> bước</p>
+          </div>
 
           <div class="wizard-steps-stack">
             <!-- Step 1: Google Chrome -->
@@ -59,9 +77,11 @@
                 <span id="badge-chrome" class="step-badge badge-warning">Đang kiểm tra...</span>
               </div>
               <div class="step-body">
-                <p>Playwright điều khiển Google Chrome thực tế để tự động tạo video trên Gemini. Bạn cần cài đặt Google Chrome trên máy tính của mình.</p>
+                <p>Playwright điều khiển Google Chrome thực tế để tự động tạo video trên Gemini. Bạn cần cài đặt Google
+                  Chrome trên máy tính của mình.</p>
                 <div class="status-msg-box error-box" id="chrome-not-found" hidden>
-                  Không tìm thấy Google Chrome tại các thư mục ứng dụng mặc định. Vui lòng tải và cài đặt từ <a href="https://www.google.com/chrome/" target="_blank" rel="noopener">trang chủ Chrome</a>.
+                  Không tìm thấy Google Chrome tại các thư mục ứng dụng mặc định. Vui lòng tải và cài đặt từ <a
+                    href="https://www.google.com/chrome/" target="_blank" rel="noopener">trang chủ Chrome</a>.
                 </div>
                 <div class="status-msg-box success-box" id="chrome-found" hidden>
                   Đã phát hiện Google Chrome trên hệ thống của bạn!
@@ -76,12 +96,13 @@
                   <span class="step-num">2</span>
                   <span class="step-title">Khởi tạo cấu hình (.env)</span>
                 </div>
-                <span id="badge-env" class="step-badge badge-error font-highlight">Chưa có</span>
+                <span id="badge-env" class="step-badge badge-error">Chưa có</span>
               </div>
               <div class="step-body">
                 <p>Môi trường chạy cần file <code>.env</code> để lưu trữ các cấu hình bảo mật.</p>
                 <div class="step-action" id="env-create-container">
-                  <button id="btn-init-env" type="button" class="btn btn-primary btn-sm">Tự động tạo file .env từ mẫu</button>
+                  <button id="btn-init-env" type="button" class="btn btn-primary btn-sm">Tự động tạo file .env từ
+                    mẫu</button>
                 </div>
                 <div class="status-msg-box success-box" id="env-created-msg" hidden>
                   Đã tạo file <code>.env</code> thành công!
@@ -89,7 +110,7 @@
               </div>
             </div>
 
-            <!-- Step 3: Đăng nhập Gemini -->
+            <!-- Step 3: Login Gemini -->
             <div id="step-login" class="wizard-step">
               <div class="step-header">
                 <div class="step-header-left">
@@ -99,21 +120,25 @@
                 <span id="badge-login" class="step-badge badge-error">Chưa đăng nhập</span>
               </div>
               <div class="step-body">
-                <p>Vì lý do bảo mật của Google, bạn cần đăng nhập tài khoản Google của bạn bằng Chrome thật một lần để lưu phiên hoạt động.</p>
+                <p>Vì lý do bảo mật của Google, bạn cần đăng nhập tài khoản Google của bạn bằng Chrome thật một lần để
+                  lưu phiên hoạt động.</p>
                 <p>Mở terminal trong thư mục dự án và chạy lệnh sau:</p>
                 <div class="command-box">
                   <code>npm run gemini:login</code>
                   <button class="btn-copy" data-copy="npm run gemini:login" type="button" title="Sao chép lệnh">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+                      stroke-linecap="round" stroke-linejoin="round">
                       <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                     </svg>
                   </button>
                 </div>
-                <p class="small-text font-muted mt-2">Trình duyệt Chrome sẽ hiện ra. Hãy đăng nhập tài khoản của bạn, sau đó quay lại terminal nhấn <strong>Enter</strong> để kết thúc.</p>
+                <p class="small-text font-muted mt-2">Trình duyệt Chrome sẽ hiện ra. Hãy đăng nhập tài khoản của bạn,
+                  sau đó quay lại terminal nhấn <strong>Enter</strong> để kết thúc.</p>
                 <div class="step-action mt-2">
                   <button id="btn-check-login" type="button" class="btn btn-secondary btn-sm">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="spin-icon-slow" style="display: none;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+                      stroke-linecap="round" stroke-linejoin="round" class="spin-icon-slow" style="display: none;">
                       <circle cx="12" cy="12" r="10"></circle>
                       <path d="M12 2a10 10 0 0 1 10 10"></path>
                     </svg>
@@ -123,7 +148,7 @@
               </div>
             </div>
 
-            <!-- Step 4: Điền thông tin API Keys -->
+            <!-- Step 4: API Keys -->
             <div id="step-keys" class="wizard-step">
               <div class="step-header">
                 <div class="step-header-left">
@@ -134,43 +159,51 @@
               </div>
               <div class="step-body">
                 <p>Nhập thông tin khóa API cần thiết cho việc tạo mô tả bằng AI và upload video tự động lên YouTube.</p>
-                
+
                 <form id="wizard-config-form" class="form-grid wizard-form">
                   <div class="form-group">
                     <label for="wiz-gemini-key">
                       <span class="label-title">GEMINI_API_KEY <span class="required-star">*</span></span>
-                      <span class="label-help">Dùng tạo Title/Description. Tạo key miễn phí tại <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio ↗</a>.</span>
+                      <span class="label-help">Dùng tạo Title/Description. Tạo key miễn phí tại <a
+                          href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio
+                          ↗</a>.</span>
                     </label>
-                    <input id="wiz-gemini-key" type="password" placeholder="Để trống để giữ nguyên" autocomplete="new-password" />
+                    <input id="wiz-gemini-key" type="password" placeholder="Để trống để giữ nguyên"
+                      autocomplete="new-password" />
                   </div>
 
                   <div class="form-group-row">
                     <div class="form-group">
                       <label for="wiz-yt-id">
                         <span class="label-title">YOUTUBE_CLIENT_ID <span class="required-star">*</span></span>
-                        <span class="label-help">Lấy từ Credentials của <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console ↗</a> (Desktop App).</span>
+                        <span class="label-help">Lấy từ Google Cloud Console (Desktop App).</span>
                       </label>
-                      <input id="wiz-yt-id" type="password" placeholder="Để trống để giữ nguyên" autocomplete="new-password" />
+                      <input id="wiz-yt-id" type="password" placeholder="Để trống để giữ nguyên"
+                        autocomplete="new-password" />
                     </div>
                     <div class="form-group">
                       <label for="wiz-yt-secret">
                         <span class="label-title">YOUTUBE_CLIENT_SECRET <span class="required-star">*</span></span>
                         <span class="label-help">Secret tương ứng với Client ID của Desktop app.</span>
                       </label>
-                      <input id="wiz-yt-secret" type="password" placeholder="Để trống để giữ nguyên" autocomplete="new-password" />
+                      <input id="wiz-yt-secret" type="password" placeholder="Để trống để giữ nguyên"
+                        autocomplete="new-password" />
                     </div>
                   </div>
 
                   <div class="form-group">
                     <label for="wiz-yt-refresh">
                       <span class="label-title">YOUTUBE_REFRESH_TOKEN <span class="required-star">*</span></span>
-                      <span class="label-help">Lấy tại <a href="https://developers.google.com/oauthplayground" target="_blank" rel="noopener">Google OAuth Playground ↗</a> với Client ID & Secret ở trên cùng scope <code>youtube.upload</code>.</span>
+                      <span class="label-help">Lấy tại Google OAuth Playground với scope
+                        <code>youtube.upload</code>.</span>
                     </label>
-                    <input id="wiz-yt-refresh" type="password" placeholder="Để trống để giữ nguyên" autocomplete="new-password" />
+                    <input id="wiz-yt-refresh" type="password" placeholder="Để trống để giữ nguyên"
+                      autocomplete="new-password" />
                   </div>
 
                   <div class="advanced-toggle-container">
-                    <button type="button" id="btn-toggle-advanced" class="btn-text-link">Cấu hình nâng cao (Tùy chọn) ▾</button>
+                    <button type="button" id="btn-toggle-advanced" class="btn-text-link">Cấu hình nâng cao (Tùy chọn)
+                      ▾</button>
                   </div>
 
                   <div id="advanced-config-fields" class="form-grid mt-2" style="display: none;">
@@ -193,7 +226,8 @@
                     <div class="form-group-row">
                       <div class="form-group">
                         <label for="wiz-tg-token">TELEGRAM_BOT_TOKEN</label>
-                        <input id="wiz-tg-token" type="password" placeholder="Để trống để giữ nguyên" autocomplete="new-password" />
+                        <input id="wiz-tg-token" type="password" placeholder="Để trống để giữ nguyên"
+                          autocomplete="new-password" />
                       </div>
                       <div class="form-group">
                         <label for="wiz-tg-chat">TELEGRAM_CHAT_ID</label>
@@ -204,9 +238,12 @@
 
                   <button id="btn-save-wizard-keys" type="submit" class="btn btn-primary btn-glow mt-4">
                     <span>Lưu Cấu Hình & Bắt Đầu Sử Dụng</span>
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
+                    <span class="btn-icon-circle">
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </span>
                   </button>
                   <p id="wizard-save-status" class="status-msg"></p>
                 </form>
@@ -218,61 +255,93 @@
       </div>
     </div>
 
-    <!-- Settings Drawer (Collapsible settings panel) -->
+    <!-- Settings Drawer (Frosted Glass slide-over configurations) -->
     <div id="settings-drawer" class="settings-drawer" hidden>
       <div class="drawer-overlay" id="drawer-overlay"></div>
-      <div class="drawer-content glass">
+      <div class="drawer-content">
         <div class="drawer-header">
           <div class="drawer-title-group">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
+              </path>
             </svg>
             <h2>Cấu hình (.env)</h2>
           </div>
           <button id="btn-close-settings" class="btn-close" type="button" aria-label="Đóng cấu hình">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
         </div>
         <div class="drawer-body">
-          <p class="drawer-help-text">Chỉnh sửa các tham số cấu hình của file <code>.env</code> bên dưới. Để trống nếu muốn giữ nguyên giá trị cũ.</p>
+          <p class="drawer-help-text">Chỉnh sửa trực tiếp các thông số môi trường của hệ thống. Nhập giá trị mới để cập
+            nhật cấu hình.</p>
           <form id="config-form" class="form-grid"></form>
           <p id="config-status" class="status-msg"></p>
         </div>
       </div>
     </div>
 
-    <main id="main-dashboard" class="app-board glass">
-      <!-- Sidebar Panel of the Application Board -->
+    <!-- Main Dashboard Board -->
+    <main id="main-dashboard" class="app-board glass" data-phase="idle">
+      <!-- Collapsible Left Sidebar for Application Control -->
       <aside class="board-sidebar">
         <div class="sidebar-brand">
-          <svg class="logo-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="logo-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="23 7 16 12 23 17 23 7"></polygon>
             <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
           </svg>
           <span>yt-flow</span>
         </div>
+
         <nav class="sidebar-nav">
           <a href="#" class="nav-item active">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-            <span>Dashboard</span>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>Console</span>
           </a>
           <a href="#" class="nav-item disabled" title="Tính năng đang phát triển">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>
-            <span>Video Projects</span>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z">
+              </path>
+              <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon>
+            </svg>
+            <span>Videos</span>
           </a>
           <a href="#" id="sidebar-btn-settings" class="nav-item">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
+              </path>
+            </svg>
             <span>Cấu hình</span>
           </a>
           <a href="#" class="nav-item disabled" title="Tính năng đang phát triển">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
             <span>Trợ giúp</span>
           </a>
         </nav>
+
         <div class="sidebar-footer">
           <div class="system-status-sidebar">
             <span class="status-indicator-dot online"></span>
@@ -283,81 +352,85 @@
 
       <!-- Main Board Content Area -->
       <div class="board-main">
-        <!-- Top Bar inside the main board -->
+        <!-- Top Bar inside the main board (Controls and trigger) -->
         <div class="board-top-bar">
           <div class="project-selector">
-            <span class="selector-label">Project:</span>
+            <span class="selector-label">Mẫu xe:</span>
             <div class="select-wrapper">
               <select id="car-select">
                 <option value="">-- Dùng queue mặc định --</option>
               </select>
             </div>
           </div>
+
           <div class="user-profile">
-            <span class="user-label">User:</span>
-            <span class="user-name">Admin</span>
+            <span class="user-label">Profile:</span>
+            <span class="user-name">Administrator</span>
           </div>
+
           <button id="generate-btn" type="button" class="btn btn-primary btn-glow btn-sm">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
               <polygon points="5 3 19 12 5 21 5 3"></polygon>
             </svg>
             <span>AI Generation</span>
           </button>
         </div>
 
-        <!-- 3-Column Workspace -->
+        <!-- 3-Column Bento Workspace / Dynamic Layout area -->
         <div class="board-workspace">
-          
-          <!-- Column 1: Left (Checklists & Queue) -->
+
+          <!-- Column 1: Left Column (Browser Automation Status & Hàng chờ xe) -->
           <div class="workspace-col col-left">
-            <!-- Checklist Card 1: Browser Automation -->
-            <section class="card glass compact-card">
-              <div class="card-header border-bottom">
-                <span class="card-tag">Browser Automation</span>
-                <div class="dots-action">•••</div>
-              </div>
-              <div class="card-body">
-                <div class="playwright-info">
-                  <span class="playwright-logo">🎭</span>
-                  <div class="playwright-text">
-                    <span class="playwright-title">Playwright</span>
-                    <span class="playwright-version">v1.40.1</span>
-                  </div>
+            <!-- Checklist Card: Browser Automation Status -->
+            <section class="bezel-shell compact-card shadow-premium">
+              <div class="bezel-core">
+                <div class="card-header-premium border-bottom">
+                  <span class="card-tag">Browser Automation</span>
                 </div>
-                <div class="automation-checklist">
-                  <div id="check-browser-launch" class="checklist-item">
-                    <span class="check-box"></span>
-                    <span class="check-text">browser launched</span>
+                <div class="card-body">
+                  <div class="playwright-info">
+                    <span class="playwright-logo">🎭</span>
+                    <div class="playwright-text">
+                      <span class="playwright-title">Playwright Engine</span>
+                      <span class="playwright-version">v1.48.0 (Active)</span>
+                    </div>
                   </div>
-                  <div id="check-browser-nav" class="checklist-item">
-                    <span class="check-box"></span>
-                    <span class="check-text">navigating</span>
-                  </div>
-                  <div id="check-browser-render" class="checklist-item">
-                    <span class="check-box"></span>
-                    <span class="check-text">rendering scene</span>
+                  <div class="automation-checklist">
+                    <div id="check-browser-launch" class="checklist-item">
+                      <span class="check-box"></span>
+                      <span class="check-text">Browser launched</span>
+                    </div>
+                    <div id="check-browser-nav" class="checklist-item">
+                      <span class="check-box"></span>
+                      <span class="check-text">Navigating pipeline</span>
+                    </div>
+                    <div id="check-browser-render" class="checklist-item">
+                      <span class="check-box"></span>
+                      <span class="check-text">Rendering ASMR scene</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </section>
 
-            <!-- Card 2: Cars Queue -->
-            <section class="card glass compact-card">
-              <div class="card-header border-bottom">
-                <span class="card-tag">Hàng chờ xe (Queue)</span>
-              </div>
-              <div class="card-body">
-                <ul id="queue-list" class="queue-list">
-                  <!-- dynamically populated pills -->
-                </ul>
-                <p id="generate-status" class="status-msg"></p>
+            <!-- Card: Queue List -->
+            <section class="bezel-shell compact-card shadow-premium">
+              <div class="bezel-core">
+                <div class="card-header-premium border-bottom">
+                  <span class="card-tag">Hàng chờ tạo xe (Queue)</span>
+                </div>
+                <div class="card-body flex-col gap-3">
+                  <ul id="queue-list" class="queue-list">
+                  </ul>
+                  <p id="generate-status" class="status-msg"></p>
+                </div>
               </div>
             </section>
           </div>
 
-          <!-- Column 2: Center (Active Work Area) -->
+          <!-- Column 2: Center Column (Dynamic Workspaces - Switchable Phases) -->
           <div class="workspace-col col-center">
-            
+
             <!-- Phase 1: Idle Screen -->
             <div id="idle-preview" class="idle-preview-panel card-video-container active">
               <div class="video-preview-header">
@@ -366,13 +439,21 @@
               </div>
               <div class="video-preview-frame">
                 <div class="video-placeholder-art">
-                  <div class="car-wireframe"></div>
-                  <span class="placeholder-art-text">Chọn xe và nhấn <strong>AI Generation</strong> ở trên để bắt đầu</span>
+                  <div class="car-wireframe-glow">
+                    <svg viewBox="0 0 100 50" width="100" height="50" fill="none" stroke="currentColor" stroke-width="1"
+                      class="car-wire-svg">
+                      <path d="M10 35 L15 25 L35 25 L45 12 L70 12 L85 25 L92 35 Z" stroke-dasharray="3 3" />
+                      <circle cx="28" cy="35" r="8" stroke-dasharray="2 2" />
+                      <circle cx="72" cy="35" r="8" stroke-dasharray="2 2" />
+                    </svg>
+                  </div>
+                  <span class="placeholder-art-text">Chọn xe hoặc sử dụng hàng chờ mặc định, sau đó nhấn <strong>AI
+                      Generation</strong> để khởi động quy trình.</span>
                 </div>
               </div>
             </div>
 
-            <!-- Phase 2: Progress (Running Screen) -->
+            <!-- Phase 2: Progress (Rendering/Running Screen) -->
             <div id="progress" class="progress-panel card-video-container" hidden>
               <div class="video-preview-header">
                 <div class="spinner-container">
@@ -380,16 +461,23 @@
                 </div>
                 <span class="video-preview-status">Đang tạo video...</span>
               </div>
-              <div class="video-preview-frame">
+              <div class="video-preview-frame flex-col justify-center">
                 <div class="video-placeholder-art active">
-                  <div class="car-pulse-ring"></div>
-                  <div class="details-item">
-                    <span class="label">Xe:</span>
-                    <span id="progress-car" class="value font-highlight"></span>
-                  </div>
-                  <div class="details-item mt-2">
-                    <span class="label">Bước:</span>
-                    <span id="progress-step" class="value step-text"></span>
+                  <div class="telemetry-console">
+                    <div class="console-header">
+                      <span class="console-dot red"></span>
+                      <span class="console-dot yellow"></span>
+                      <span class="console-dot green"></span>
+                      <span class="console-title">Pipeline Monitor</span>
+                    </div>
+                    <div class="console-body">
+                      <div class="log-line text-muted">[SYS] Initializing Playwright browser instance...</div>
+                      <div class="log-line text-muted">[SYS] Setting up Google Chrome runtime environment...</div>
+                      <div class="log-line text-accent font-medium">Model: <span id="progress-car"
+                          class="font-highlight text-white"></span></div>
+                      <div class="log-line text-success font-medium">Status: <span id="progress-step"
+                          class="step-text"></span></div>
+                    </div>
                   </div>
                   <div class="progress-bar-container mt-4">
                     <div class="progress-bar-indeterminate"></div>
@@ -398,159 +486,177 @@
               </div>
             </div>
 
-            <!-- Phase 3: Video Approval Screen -->
+            <!-- Phase 3: Video Approval Screen (Mockup Smartphone Bezel for 9:16 vertical layout) -->
             <div id="video-review" class="video-review-panel card-video-container" hidden>
               <div class="video-preview-header">
-                <span class="video-preview-status">Chờ duyệt video</span>
+                <span class="video-preview-status">Duyệt Video kết quả</span>
+                <span class="video-preview-badge">9:16 Preview</span>
               </div>
               <div class="video-preview-frame">
-                <video id="video-player" controls preload="auto" class="vertical-video-element"></video>
+                <!-- Phone Bezel Wrapper -->
+                <div class="phone-mockup">
+                  <div class="phone-speaker"></div>
+                  <div class="phone-screen">
+                    <video id="video-player" controls preload="auto" class="vertical-video-element"></video>
+                  </div>
+                  <div class="phone-home-indicator"></div>
+                </div>
               </div>
-              <div class="video-review-actions mt-4">
+              <div class="video-review-actions">
                 <button id="approve-video-btn" type="button" class="btn btn-success btn-glow w-half">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   <span>Duyệt Video</span>
+                  <span class="btn-icon-circle">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                      stroke-width="2.5">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </span>
                 </button>
                 <button id="reject-video-btn" type="button" class="btn btn-danger w-half">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                   <span>Từ chối</span>
+                  <span class="btn-icon-circle">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                      stroke-width="2.5">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </span>
                 </button>
               </div>
             </div>
 
             <!-- Phase 4: Metadata Screen -->
-            <div id="metadata-review" class="metadata-review-panel card glass" hidden>
-              <div class="card-header border-bottom">
-                <span class="card-tag">Thông tin Metadata YouTube</span>
+            <div id="metadata-review" class="metadata-review-panel card-video-container" hidden>
+              <div class="video-preview-header">
+                <span class="video-preview-status">Thông tin Metadata YouTube</span>
               </div>
               <div class="card-body form-grid">
                 <div class="form-group">
-                  <label for="meta-title">Tiêu đề (Title)</label>
+                  <label for="meta-title">Tiêu đề video (Title)</label>
                   <input id="meta-title" type="text" placeholder="Nhập tiêu đề video..." />
                 </div>
                 <div class="form-group">
-                  <label for="meta-description">Mô tả (Description)</label>
-                  <textarea id="meta-description" rows="5" placeholder="Nhập mô tả chi tiết cho video..."></textarea>
+                  <label for="meta-description">Mô tả chi tiết (Description)</label>
+                  <textarea id="meta-description" rows="6" placeholder="Nhập mô tả chi tiết cho video..."></textarea>
                 </div>
                 <div class="form-group">
-                  <label for="meta-tags">Từ khóa (Tags - phân cách bằng dấu phẩy)</label>
-                  <input id="meta-tags" type="text" placeholder="xe, car, review, ..." />
+                  <label for="meta-tags">Từ khóa (Tags - ngăn cách bằng dấu phẩy)</label>
+                  <input id="meta-tags" type="text" placeholder="xe, review, o to, asmr..." />
                 </div>
-                <button id="upload-btn" type="button" class="btn btn-primary btn-glow mt-4 w-full">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span>Upload YouTube</span>
+                <button id="upload-btn" type="button" class="btn btn-primary btn-glow mt-2 w-full">
+                  <span>Đăng tải YouTube</span>
+                  <span class="btn-icon-circle">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                      stroke-width="2.5">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </span>
                 </button>
               </div>
             </div>
 
             <!-- Phase 5: Done/Result Screen -->
-            <div id="result" class="result-panel card glass" hidden>
-              <div class="card-header border-bottom">
-                <span class="card-tag">Hoàn thành quy trình</span>
+            <div id="result" class="result-panel card-video-container" hidden>
+              <div class="video-preview-header">
+                <span class="video-preview-status" id="result-header-text">Hoàn thành quy trình Pipeline</span>
               </div>
-              <div class="card-body text-center py-6">
-                <div class="success-icon-wrapper mb-4">
-                  <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" class="text-success"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                </div>
-                <h3 class="mb-2">Đã hoàn thành!</h3>
-                <p id="result-message" class="result-message status-msg status-success"></p>
-                <button id="reset-btn" type="button" class="btn btn-secondary mt-6">
-                  <span>Tiếp tục tạo video khác</span>
+              <div class="card-body result-card-body py-6">
+                <div id="result-icon-container"></div>
+                <h3 id="result-title" class="result-title">Quy trình hoàn tất</h3>
+                <div id="result-message" class="result-message-container"></div>
+                <button id="reset-btn" type="button" class="btn btn-secondary btn-glow mt-4">
+                  <span>Tiếp tục tạo video tiếp theo</span>
+                  <span class="btn-icon-circle">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                      stroke-width="2.5">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </span>
                 </button>
               </div>
             </div>
 
           </div>
 
-          <!-- Column 3: Right (Video Info & Hardware Stats) -->
+          <!-- Column 3: Right Column (Video Info, System Health stats, Upload settings) -->
           <div class="workspace-col col-right">
-            <!-- Card 1: Video Info -->
-            <section class="card glass compact-card">
-              <div class="card-header border-bottom">
-                <span class="card-tag">Thông tin Video</span>
-                <div class="dots-action">•••</div>
-              </div>
-              <div class="card-body">
-                <div class="video-info-list">
-                  <div class="video-info-item">
-                    <span class="label">Định dạng:</span>
-                    <span class="value">9:16 Vertical</span>
-                  </div>
-                  <div class="video-info-item">
-                    <span class="label">Loại video:</span>
-                    <span class="value">Deresclie Video</span>
-                  </div>
-                  <div class="video-info-item">
-                    <span class="label">Độ phân giải:</span>
-                    <span class="value">1080p - 60fps</span>
-                  </div>
-                  <div class="video-info-item">
-                    <span class="label">Mẫu xe chọn:</span>
-                    <span id="info-selected-car" class="value">Chưa chọn</span>
+            <!-- Card: Video Information -->
+            <section class="bezel-shell compact-card shadow-premium">
+              <div class="bezel-core">
+                <div class="card-header-premium border-bottom">
+                  <span class="card-tag">Thông số video</span>
+                </div>
+                <div class="card-body">
+                  <div class="video-info-list">
+                    <div class="video-info-item">
+                      <span class="label">Định dạng:</span>
+                      <span class="value">9:16 Vertical</span>
+                    </div>
+                    <div class="video-info-item">
+                      <span class="label">Thể loại:</span>
+                      <span class="value">YouTube Shorts</span>
+                    </div>
+                    <div class="video-info-item">
+                      <span class="label">Độ phân giải:</span>
+                      <span class="value">1080p @ 60fps</span>
+                    </div>
+                    <div class="video-info-item">
+                      <span class="label">Mẫu xe chọn:</span>
+                      <span id="info-selected-car" class="value font-medium text-white">Chưa chọn</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </section>
 
-            <!-- Card 2: System Performance Stats (GPU/RAM) -->
-            <section class="card glass compact-card">
-              <div class="card-header border-bottom">
-                <span class="card-tag">Hiệu năng hệ thống</span>
-                <div class="dots-action">•••</div>
-              </div>
-              <div class="card-body">
-                <div class="perf-stats">
-                  <div class="perf-item">
-                    <div class="perf-label">
-                      <span>FPS</span>
-                      <span id="stat-fps" class="perf-value">30</span>
+            <!-- Card: Performance Monitoring Stats (Dynamic) -->
+            <!-- <section class="bezel-shell compact-card shadow-premium">
+              <div class="bezel-core">
+                <div class="card-header-premium border-bottom">
+                  <span class="card-tag">Giám sát hệ thống</span>
+                </div>
+                <div class="card-body">
+                  <div class="perf-stats">
+                    <div class="perf-item">
+                      <div class="perf-label">
+                        <span>FPS</span>
+                        <span id="stat-fps" class="perf-value">0</span>
+                      </div>
+                      <div class="perf-bar-track">
+                        <div id="stat-fps-bar" class="perf-bar-fill" style="width: 0%;"></div>
+                      </div>
                     </div>
-                    <div class="perf-bar-track">
-                      <div id="stat-fps-bar" class="perf-bar-fill" style="width: 50%;"></div>
+                    <div class="perf-item">
+                      <div class="perf-label">
+                        <span>Tải GPU (GPU active)</span>
+                        <span id="stat-gpu" class="perf-value">0%</span>
+                      </div>
+                      <div class="perf-bar-track">
+                        <div id="stat-gpu-bar" class="perf-bar-fill" style="width: 0%;"></div>
+                      </div>
                     </div>
-                  </div>
-                  <div class="perf-item">
-                    <div class="perf-label">
-                      <span>GPU Usage</span>
-                      <span id="stat-gpu" class="perf-value">0%</span>
-                    </div>
-                    <div class="perf-bar-track">
-                      <div id="stat-gpu-bar" class="perf-bar-fill" style="width: 0%;"></div>
-                    </div>
-                  </div>
-                  <div class="perf-item">
-                    <div class="perf-label">
-                      <span>RAM Active</span>
-                      <span id="stat-ram" class="perf-value">8.2 GB</span>
-                    </div>
-                    <div class="perf-bar-track">
-                      <div id="stat-ram-bar" class="perf-bar-fill" style="width: 51%;"></div>
+                    <div class="perf-item">
+                      <div class="perf-label">
+                        <span>Tải RAM (RAM active)</span>
+                        <span id="stat-ram" class="perf-value">0 GB</span>
+                      </div>
+                      <div class="perf-bar-track">
+                        <div id="stat-ram-bar" class="perf-bar-fill" style="width: 0%;"></div>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div class="perf-controls mt-4">
-                  <button class="btn-icon-tiny" type="button"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg></button>
-                  <button class="btn-icon-tiny" type="button"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>
-                  <button class="btn-icon-tiny" type="button"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg></button>
-                </div>
               </div>
-            </section>
+            </section> -->
 
-            <!-- Card 3: Channel settings -->
-            <section class="card glass compact-card">
-              <div class="card-header border-bottom">
-                <span class="card-tag">Cấu hình đăng tải</span>
-              </div>
-              <div class="card-body">
-                <div class="video-info-list">
-                  <div class="video-info-item">
-                    <span class="label">Quyền riêng tư:</span>
-                    <span class="value">Private</span>
-                  </div>
-                  <div class="video-info-item">
-                    <span class="label">Kênh đích:</span>
-                    <span class="value">YouTube Shorts</span>
-                  </div>
+            <!-- Card: Upload Channel configuration -->
+            <section class="bezel-shell compact-card shadow-premium">
+              <div class="bezel-core">
+                <div class="card-header-premium border-bottom">
+                  <span class="card-tag">Thông tin đăng tải</span>
+                </div>
+                <div class="card-body" id="yt-channel-card-body">
+                  <div class="yt-channel-loading">Đang tải thông tin kênh...</div>
                 </div>
               </div>
             </section>
@@ -560,11 +666,13 @@
       </div>
     </main>
 
+    <!-- Footer of the Console -->
     <footer class="app-footer">
-      <p>yt-flow automation &copy; 2026. Made with ❤️ local engine.</p>
+      <p>yt-flow automation &copy; 2026. Powered by Gemini & Playwright local engine.</p>
     </footer>
   </div>
 
-  <script src="/app.js"></script>
+  <script src="/app.js?v=4"></script>
 </body>
+
 </html>

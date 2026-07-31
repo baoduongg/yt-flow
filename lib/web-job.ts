@@ -5,7 +5,7 @@ export type JobState =
   | { phase: "idle" }
   | { phase: "running"; car: string; step: string }
   | { phase: "awaiting-video"; car: string; videoPath: string }
-  | { phase: "awaiting-metadata"; car: string; metadata: VideoMetadata }
+  | { phase: "awaiting-metadata"; car: string; metadata: VideoMetadata; videoPath?: string }
   | { phase: "done"; car: string; youtubeUrl: string }
   | { phase: "error"; message: string };
 
@@ -15,6 +15,7 @@ export type JobRunner = {
   start: (carOverride?: string) => boolean;
   decideVideo: (approved: boolean) => boolean;
   decideMetadata: (metadata: VideoMetadata) => boolean;
+  reset: () => boolean;
 };
 
 export function createJobRunner(deps: PipelineDeps = defaultDeps): JobRunner {
@@ -23,6 +24,7 @@ export function createJobRunner(deps: PipelineDeps = defaultDeps): JobRunner {
   const listeners = new Set<(state: JobState) => void>();
   let pendingVideoResolve: ((approved: boolean) => void) | null = null;
   let pendingMetadataResolve: ((metadata: VideoMetadata) => void) | null = null;
+  let currentVideoPath = "";
 
   function setState(next: JobState): void {
     state = next;
@@ -49,12 +51,13 @@ export function createJobRunner(deps: PipelineDeps = defaultDeps): JobRunner {
         confirmVideo: (videoPath) =>
           new Promise<boolean>((resolve) => {
             pendingVideoResolve = resolve;
+            currentVideoPath = videoPath;
             setState({ phase: "awaiting-video", car: currentCar, videoPath });
           }),
         confirmMetadata: (metadata) =>
           new Promise<VideoMetadata>((resolve) => {
             pendingMetadataResolve = resolve;
-            setState({ phase: "awaiting-metadata", car: currentCar, metadata });
+            setState({ phase: "awaiting-metadata", car: currentCar, metadata, videoPath: currentVideoPath });
           }),
       },
       deps,
@@ -87,6 +90,12 @@ export function createJobRunner(deps: PipelineDeps = defaultDeps): JobRunner {
     return true;
   }
 
+  function reset(): boolean {
+    if (isBusy()) return false;
+    setState({ phase: "idle" });
+    return true;
+  }
+
   return {
     getState: () => state,
     subscribe: (listener) => {
@@ -96,5 +105,6 @@ export function createJobRunner(deps: PipelineDeps = defaultDeps): JobRunner {
     start,
     decideVideo,
     decideMetadata,
+    reset,
   };
 }

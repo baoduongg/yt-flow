@@ -5,6 +5,7 @@ import { existsSync } from "node:fs";
 import { readFile, readdir, copyFile } from "node:fs/promises";
 import { createJobRunner } from "../lib/web-job.ts";
 import { readEnvConfig, writeEnvConfig, KNOWN_ENV_KEYS, type EnvKey } from "../lib/env-file.ts";
+import { getYoutubeChannelInfo } from "./veo-to-youtube.ts";
 
 const projectRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const envPath = path.join(projectRoot, ".env");
@@ -159,6 +160,23 @@ app.post("/api/metadata-decision", (req, res) => {
     return;
   }
   res.json({ ok: true });
+});
+
+app.post("/api/reset", (req, res) => {
+  if (runner.reset()) {
+    res.json({ ok: true });
+  } else {
+    res.status(409).json({ error: "Không thể reset khi pipeline đang chạy." });
+  }
+});
+
+app.get("/api/youtube-channel", async (req, res) => {
+  try {
+    const info = await getYoutubeChannelInfo();
+    res.json(info);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
 });
 
 app.get("/api/events", (req, res) => {

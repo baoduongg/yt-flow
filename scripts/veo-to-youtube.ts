@@ -44,3 +44,43 @@ export async function uploadToYoutube(filePath: string, meta: YoutubeMeta): Prom
   }
   return `https://youtu.be/${videoId}`;
 }
+
+export async function getYoutubeChannelInfo() {
+  const clientID = process.env.YOUTUBE_CLIENT_ID;
+  const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
+  const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
+
+  if (!clientID || !clientSecret || !refreshToken) {
+    return null;
+  }
+
+  const oauth2Client = new google.auth.OAuth2(clientID, clientSecret);
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
+
+  const youtube = google.youtube({ version: "v3", auth: oauth2Client });
+
+  try {
+    const res = await youtube.channels.list({
+      part: ["snippet", "statistics"],
+      mine: true,
+    });
+
+    const channel = res.data.items?.[0];
+    if (!channel) return null;
+
+    return {
+      title: channel.snippet?.title ?? "Không xác định",
+      customUrl: channel.snippet?.customUrl ?? "",
+      thumbnail: channel.snippet?.thumbnails?.default?.url ?? "",
+      subscriberCount: channel.statistics?.subscriberCount ?? "0",
+      videoCount: channel.statistics?.videoCount ?? "0",
+      privacyStatus: (process.env.YOUTUBE_PRIVACY_STATUS as string) ?? "private",
+    };
+  } catch (error: any) {
+    console.error("Lỗi khi lấy thông tin kênh YouTube:", error);
+    if (error.status === 403 || error.code === 403 || (error.message && error.message.includes("Permission"))) {
+      return { error: "insufficient_scope" };
+    }
+    return null;
+  }
+}

@@ -25,7 +25,7 @@ Automated pipeline: pick a car, generate an ASMR-style video of it, preview and 
 
 **`YOUTUBE_REFRESH_TOKEN`** — obtained once via a manual OAuth flow, e.g. [Google OAuth 2.0 Playground](https://developers.google.com/oauthplayground):
 1. Click the gear icon (top right) → check "Use your own OAuth credentials" → paste your `YOUTUBE_CLIENT_ID`/`YOUTUBE_CLIENT_SECRET`.
-2. In the scopes list (or type manually), enter `https://www.googleapis.com/auth/youtube.upload`, click **Authorize APIs**, sign in with the Google account that owns the target YouTube channel.
+2. In the scopes input box, enter both scopes separated by a space: `https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly` (or simply `https://www.googleapis.com/auth/youtube` for full access), click **Authorize APIs**, sign in with the Google account that owns the target YouTube channel.
 3. Click **Exchange authorization code for tokens** — copy the **Refresh token** value into `.env`.
 
 ## Running
