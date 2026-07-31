@@ -7,7 +7,6 @@ const projectRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), ".."
 const DEFAULT_PROFILE_DIR = path.join(projectRoot, ".gemini-profile");
 const OUTPUT_DIR = path.join(projectRoot, "output");
 const GEMINI_URL = "https://gemini.google.com/app";
-const GEMINI_VIDEO_URL = "https://gemini.google.com/videos";
 
 function profileDir(): string {
   return process.env.GEMINI_PROFILE_DIR ?? DEFAULT_PROFILE_DIR;
@@ -66,18 +65,23 @@ const GENERATION_TIMEOUT_MS = 10 * 60_000;
 const POLL_INTERVAL_MS = 10_000;
 
 async function selectVeoMode(page: Page): Promise<void> {
-  // Confirmed live via scripts/gemini-inspect.ts (2026-07-30): "Video" isn't
-  // a menu item on /app — visiting /videos redirects back to /app with the
-  // composer's Video toggle already on, after a one-time "Dùng thử"/"Try it"
-  // intro dialog. If Google changes this flow, re-run gemini-inspect.ts
-  // against /videos to see the new structure.
-  await page.goto(GEMINI_VIDEO_URL);
-  await page.waitForTimeout(3000);
-  const tryButton = page.getByRole("button", { name: /dùng thử|try it|try/i });
-  if (await tryButton.first().isVisible().catch(() => false)) {
-    await tryButton.first().click();
-    await page.waitForTimeout(1000);
+  // Confirmed live via scripts/gemini-inspect.ts (2026-07-31): Google killed the
+  // /videos deep link — it now redirects to the bare gemini.google.com root, a
+  // blank shell with no composer (this is the "trang trắng" bug). Video mode is
+  // now enabled from /app itself via the composer's tools menu: the "Nội dung
+  // tải lên và công cụ" button opens a menu with a "Tạo video" checkbox item.
+  // If Google changes this again, re-run gemini-inspect.ts against /app and
+  // open that tools menu to see the new structure.
+  const understandButton = page.getByRole("button", { name: /tôi hiểu|got it/i });
+  if (await understandButton.first().isVisible().catch(() => false)) {
+    await understandButton.first().click();
+    await page.waitForTimeout(500);
   }
+  const toolsButton = page.getByRole("button", { name: /nội dung tải lên và công cụ|upload.*tools/i });
+  await toolsButton.first().click();
+  const videoOption = page.getByRole("menuitemcheckbox", { name: /tạo video|create video/i });
+  await videoOption.first().click();
+  await page.waitForTimeout(1000);
 }
 
 async function selectVerticalAspectRatio(page: Page): Promise<void> {
@@ -109,8 +113,14 @@ const DOWNLOAD_BUTTON_NAME = /download|tải.*xuống/i;
 // (quota exhausted, content blocked, etc). Best-effort match — Google can
 // reword this; re-run scripts/gemini-inspect-result.ts against a triggered
 // error to check the live text if this stops catching something.
+//
+// "nâng cấp" alone is NOT safe here: Gemini's top bar always has a persistent
+// "Nâng cấp" (upgrade to Advanced) link on every page, so a bare match false-
+// positives on every single run, seconds after submit. Require the trailing
+// "để ..." Google attaches to an actual quota-upsell message so the nav CTA
+// (just the two words "Nâng cấp") can't match.
 const GENERATION_ERROR_TEXT =
-  /out of videos|upgrade to keep creating|something went wrong|unable to (create|generate)|hết lượt|nâng cấp|đã xảy ra lỗi/i;
+  /out of videos|upgrade to keep creating|something went wrong|unable to (create|generate)|hết lượt|nâng cấp để|đã xảy ra lỗi/i;
 
 async function checkForGenerationError(page: Page): Promise<string | null> {
   const errorLocator = page.getByText(GENERATION_ERROR_TEXT);
@@ -135,6 +145,23 @@ async function waitForVideoReady(page: Page): Promise<void> {
   throw new Error(`waitForVideoReady: video not ready after ${GENERATION_TIMEOUT_MS / 1000}s`);
 }
 
+// ponytail: automation runs faster than a human can watch the visible browser
+// window, so on failure the only evidence is this log + a screenshot taken
+// right before the context closes — check output/gemini-error-*.png.
+async function withStep<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  console.log(`[gemini] ${label}...`);
+  const result = await fn();
+  console.log(`[gemini] ${label}: xong`);
+  return result;
+}
+
+async function saveErrorScreenshot(page: Page): Promise<string> {
+  await mkdir(OUTPUT_DIR, { recursive: true });
+  const screenshotPath = path.join(OUTPUT_DIR, `gemini-error-${Date.now()}.png`);
+  await page.screenshot({ path: screenshotPath, fullPage: true });
+  return screenshotPath;
+}
+
 async function downloadVideo(page: Page): Promise<string> {
   const downloadButton = page.getByRole("button", { name: DOWNLOAD_BUTTON_NAME }).first();
   const [download] = await Promise.all([page.waitForEvent("download"), downloadButton.click()]);
@@ -146,8 +173,9 @@ async function downloadVideo(page: Page): Promise<string> {
 
 export async function generateVideoViaBrowser(prompt: string): Promise<string> {
   const context = await openContext();
+  let page: Page | undefined;
   try {
-    const page = await context.newPage();
+    page = await context.newPage();
     await page.goto(GEMINI_URL);
 
     if (!(await isLoggedIn(page))) {
@@ -156,9 +184,9 @@ export async function generateVideoViaBrowser(prompt: string): Promise<string> {
       );
     }
 
-    await selectVeoMode(page);
-    await selectVerticalAspectRatio(page);
-    await submitPrompt(page, prompt);
+    await withStep("Bật chế độ Video", () => selectVeoMode(page!));
+    await withStep("Chọn tỷ lệ khung hình dọc", () => selectVerticalAspectRatio(page!));
+    await withStep("Gửi prompt", () => submitPrompt(page!, prompt));
 
     // Check right away too — a quota/content error toast can appear and
     // fade before the first poll in waitForVideoReady would catch it.
@@ -168,8 +196,15 @@ export async function generateVideoViaBrowser(prompt: string): Promise<string> {
       throw new Error(`Gemini báo lỗi khi tạo video: ${earlyError}`);
     }
 
-    await waitForVideoReady(page);
-    return await downloadVideo(page);
+    await withStep("Chờ video tạo xong", () => waitForVideoReady(page!));
+    return await withStep("Tải video xuống", () => downloadVideo(page!));
+  } catch (err) {
+    if (page) {
+      const screenshotPath = await saveErrorScreenshot(page).catch(() => null);
+      const suffix = screenshotPath ? ` (screenshot: ${screenshotPath})` : "";
+      throw new Error(`${(err as Error).message}${suffix}`);
+    }
+    throw err;
   } finally {
     await context.close();
   }

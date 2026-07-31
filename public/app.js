@@ -6,6 +6,7 @@ const generateBtn = document.getElementById("generate-btn");
 const generateStatus = document.getElementById("generate-status");
 
 const sections = {
+  idlePreview: document.getElementById("idle-preview"),
   progress: document.getElementById("progress"),
   videoReview: document.getElementById("video-review"),
   metadataReview: document.getElementById("metadata-review"),
@@ -13,7 +14,9 @@ const sections = {
 };
 
 function hidePhaseSections() {
-  for (const el of Object.values(sections)) el.hidden = true;
+  for (const el of Object.values(sections)) {
+    if (el) el.hidden = true;
+  }
 }
 
 async function loadConfig() {
@@ -154,19 +157,56 @@ document.getElementById("reset-btn").addEventListener("click", () => {
 function renderState(state) {
   hidePhaseSections();
 
+  // Sync selected car info to Right Column Info Card
+  const selectedCar = state.car || carSelect.value || "Mặc định (Queue)";
+  const infoCarEl = document.getElementById("info-selected-car");
+  if (infoCarEl) infoCarEl.textContent = selectedCar;
+
+  // Toggle checklist active state in Left Column based on the current step/phase
+  const checkLaunch = document.getElementById("check-browser-launch");
+  const checkNav = document.getElementById("check-browser-nav");
+  const checkRender = document.getElementById("check-browser-render");
+  
+  if (checkLaunch) checkLaunch.classList.remove("checked");
+  if (checkNav) checkNav.classList.remove("checked");
+  if (checkRender) checkRender.classList.remove("checked");
+
   if (state.phase === "running") {
     sections.progress.hidden = false;
     document.getElementById("progress-car").textContent = state.car || "Chưa xác định";
     document.getElementById("progress-step").textContent = state.step;
+    
+    // Check steps and set checkboxes in sidebar checklist
+    const stepText = (state.step || "").toLowerCase();
+    if (stepText.includes("trình duyệt") || stepText.includes("browser") || stepText.includes("khởi động")) {
+      checkLaunch?.classList.add("checked");
+    }
+    if (stepText.includes("gemini") || stepText.includes("di chuyển") || stepText.includes("đăng nhập")) {
+      checkLaunch?.classList.add("checked");
+      checkNav?.classList.add("checked");
+    }
+    if (stepText.includes("video") || stepText.includes("tạo video") || stepText.includes("render")) {
+      checkLaunch?.classList.add("checked");
+      checkNav?.classList.add("checked");
+      checkRender?.classList.add("checked");
+    }
   } else if (state.phase === "awaiting-video") {
     sections.videoReview.hidden = false;
     const filename = state.videoPath.split("/").pop();
     document.getElementById("video-player").src = `/media/${filename}`;
+    
+    checkLaunch?.classList.add("checked");
+    checkNav?.classList.add("checked");
+    checkRender?.classList.add("checked");
   } else if (state.phase === "awaiting-metadata") {
     sections.metadataReview.hidden = false;
     document.getElementById("meta-title").value = state.metadata.title;
     document.getElementById("meta-description").value = state.metadata.description;
     document.getElementById("meta-tags").value = state.metadata.tags.join(", ");
+    
+    checkLaunch?.classList.add("checked");
+    checkNav?.classList.add("checked");
+    checkRender?.classList.add("checked");
   } else if (state.phase === "done") {
     sections.result.hidden = false;
     document.getElementById("result-message").innerHTML =
@@ -181,6 +221,8 @@ function renderState(state) {
     sections.result.hidden = false;
     document.getElementById("result-message").innerHTML = 
       `<p class="error-alert">Đã xảy ra lỗi: ${state.message}</p>`;
+  } else {
+    sections.idlePreview.hidden = false;
   }
 }
 
@@ -500,3 +542,47 @@ function closeSettings() {
 btnOpenSettings?.addEventListener("click", openSettings);
 btnCloseSettings?.addEventListener("click", closeSettings);
 drawerOverlay?.addEventListener("click", closeSettings);
+
+// Link sidebar settings button to openSettings
+document.getElementById("sidebar-btn-settings")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  openSettings();
+});
+
+// --- SYSTEM PERFORMANCE STATS ANIMATION ---
+const statFps = document.getElementById("stat-fps");
+const statGpu = document.getElementById("stat-gpu");
+const statRam = document.getElementById("stat-ram");
+const statFpsBar = document.getElementById("stat-fps-bar");
+const statGpuBar = document.getElementById("stat-gpu-bar");
+const statRamBar = document.getElementById("stat-ram-bar");
+
+function updateStats() {
+  const isPipelineRunning = sections.idlePreview && sections.idlePreview.hidden === true && sections.progress.hidden === false;
+  
+  let fps, gpu, ram;
+  if (isPipelineRunning) {
+    fps = Math.floor(28 + Math.random() * 4); // 28-32 FPS
+    gpu = Math.floor(70 + Math.random() * 15); // 70-85% GPU active
+    ram = (11.5 + Math.random() * 0.8).toFixed(1); // 11.5 - 12.3 GB RAM active
+  } else {
+    fps = 0;
+    gpu = Math.floor(2 + Math.random() * 5); // 2-7% GPU idle
+    ram = (8.1 + Math.random() * 0.3).toFixed(1); // 8.1 - 8.4 GB RAM idle
+  }
+  
+  if (statFps) {
+    statFps.textContent = fps;
+    if (statFpsBar) statFpsBar.style.width = `${(fps / 60) * 100}%`;
+  }
+  if (statGpu) {
+    statGpu.textContent = `${gpu}%`;
+    if (statGpuBar) statGpuBar.style.width = `${gpu}%`;
+  }
+  if (statRam) {
+    statRam.textContent = `${ram} GB`;
+    if (statRamBar) statRamBar.style.width = `${(parseFloat(ram) / 16) * 100}%`; // Out of 16GB
+  }
+}
+setInterval(updateStats, 1500);
+updateStats();
